@@ -1,365 +1,709 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Juego de la Vida 2.0 — p5.js</title>
+  <title>IES Camas · Digitalización (DAW1) · 12 Temas RA–CE con Tareas</title>
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <style>
     :root{
-      --bg:#0b1220; --ink:#e7eefc; --muted:#9bb1d1; --accent:#fcd34d;
-      --good:#5eead4; --warn:#fca5a5;
+      --bg:#0b1220; --card:#121a2b; --card-2:#0f1626; --soft:rgba(255,255,255,.08);
+      --text:#e6edf7; --muted:#cbd5e1; --muted-2:#9aa6b2; --accent1:#0ea5e9; --accent2:#22c55e;
     }
-    html,body{height:100%}
-    body{margin:0; display:grid; place-items:center; background:radial-gradient(1100px 600px at 50% 20%, #14223c 0%, var(--bg) 60%); color:var(--ink); font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,"Helvetica Neue",Arial}
-    #wrap{width:min(1200px,96vw)}
-    #hud{display:flex; gap:.6rem; flex-wrap:wrap; align-items:center; justify-content:space-between; margin:.6rem 0 0}
-    .group{display:flex; gap:.35rem; flex-wrap:wrap; align-items:center}
-    .btn, select, input[type="text"]{background:#0f1a2e; border:1px solid #1e2a45; color:var(--ink); border-radius:.55rem; padding:.45rem .7rem; font-weight:600}
-    .btn{cursor:pointer; user-select:none}
-    .btn[aria-pressed="true"]{outline:2px solid var(--accent);}
-    label{font-size:.9rem; color:var(--muted)}
-    .kbd{border:1px solid #394764; padding:.08rem .4rem; border-radius:.35rem; font-weight:600; color:var(--ink)}
-    canvas{border-radius:18px; box-shadow:0 20px 60px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.06)}
-    .help{margin:.5rem 0 0; color:var(--muted); font-size:.92rem}
-    .help .pill{display:inline-flex; gap:.35rem; align-items:center; background:#0f1a2e; border:1px solid #1e2a45; padding:.28rem .55rem; border-radius:999px; margin-right:.35rem}
+    body{background:var(--bg);}
+    .navbar{background:linear-gradient(90deg,var(--accent1),var(--accent2));}
+    .topic-card{background:var(--card);border:1px solid var(--soft)}
+    .topic-card h5, .topic-card h6, .topic-card p{color:var(--text)}
+    .badge-soft{background:var(--soft); color:var(--muted)}
+    .ce-card{background:var(--card-2);border:1px solid var(--soft)}
+    .ce-title{color:#93c5fd}
+    .task{background:#0b1323;border-left:4px solid var(--accent2);color:var(--text)}
+    .pill{border-radius:999px;padding:.35rem .65rem;font-size:.8rem}
+    .footer-note{color:var(--muted-2)}
+    .sticky-top .form-select{max-width:260px}
+    .hero{background:radial-gradient(1000px 350px at 10% -20%, rgba(34,197,94,.15),transparent),
+           radial-gradient(1000px 350px at 90% -20%, rgba(14,165,233,.15),transparent);}
+    .small-note{font-size:.85rem;color:#cbd5e1}
+    .center-tag{background:rgba(34,197,94,.15);border:1px dashed rgba(34,197,94,.5);color:#86efac}
   </style>
 </head>
 <body>
-  <div id="wrap">
-    <main id="sketch"></main>
+  <nav class="navbar navbar-dark">
+    <div class="container">
+      <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
+        <i class="bi bi-cpu"></i> IES Camas · Digitalización · RA–CE
+      </a>
+      <span class="text-white-50 small">Bootstrap 5 · DAW1</span>
+    </div>
+  </nav>
 
-    <div id="hud">
-      <div class="group">
-        <button id="play" class="btn" aria-pressed="true">⏸️ Pausa</button>
-        <button id="step" class="btn">⏭️ Paso</button>
-        <button id="clear" class="btn">🧹 Limpiar</button>
-        <button id="random" class="btn">🎲 Aleatorio</button>
-        <label>densidad <input id="density" type="range" min="0" max="1" step="0.01" value="0.25"></label>
-      </div>
-
-      <div class="group">
-        <label>regla <input id="rule" type="text" value="B3/S23" size="9" spellcheck="false"></label>
-        <select id="preset">
-          <option value="custom">— Presets —</option>
-          <option value="B3/S23">Life (B3/S23)</option>
-          <option value="B36/S23">HighLife (B36/S23)</option>
-          <option value="B2/S">Seeds (B2/S)</option>
-          <option value="B3678/S34678">Day & Night (B3678/S34678)</option>
-          <option value="B1357/S1357">Replicator (B1357/S1357)</option>
-          <option value="B34/S34">34 Life (B34/S34)</option>
-        </select>
-        <label>vel
-          <input id="speed" type="range" min="1" max="60" step="1" value="20">
-        </label>
-        <label>celda
-          <input id="cell" type="range" min="4" max="24" step="1" value="10">
-        </label>
-        <button id="wrapBtn" class="btn" aria-pressed="true">↻ Toro</button>
-        <button id="grid" class="btn" aria-pressed="false"># Rejilla</button>
-      </div>
-
-      <div class="group">
-        <label>patrón
-          <select id="stamp">
-            <option value="brush">Pincel</option>
-            <option value="erase">Borrador</option>
-            <option value="glider">Glider</option>
-            <option value="lwss">LWSS</option>
-            <option value="pulsar">Pulsar</option>
-            <option value="gosper">Gosper Gun</option>
-          </select>
-        </label>
-        <label>tamaño pincel <input id="brush" type="range" min="1" max="6" step="1" value="2"></label>
-        <button id="center" class="btn">🎯 Centrar</button>
-        <button id="save" class="btn">📷 PNG</button>
+  <header class="hero py-5">
+    <div class="container">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <h1 class="text-white fw-bold mb-2">Secuencia de 12 temas con Criterios y Tareas</h1>
+          <p class="text-white-50 lead mb-3">
+            Cada tema agrupa Resultados de Aprendizaje (RA) y sus Criterios de Evaluación (CE),
+            con una <span class="text-white">tarea práctica concreta</span> por CE para evidenciar el aprendizaje.
+          </p>
+          <p class="small-note mb-0">
+            Envío de evidencias por Moodle Centros (PDF/MD) y repositorio individual en GitHub (<code>digitalizacion-daw1</code>).
+            Usa rúbrica por CE (0–10). Entregas semanales.
+          </p>
+        </div>
+        <div class="col-lg-4">
+          <div class="p-3 rounded-4 topic-card">
+            <h6 class="mb-2"><i class="bi bi-info-circle"></i> Sugerencia de uso</h6>
+            <ul class="mb-0 small text-white-50">
+              <li>Una evidencia por CE (informe breve + capturas/diagramas).</li>
+              <li>Plantilla de informe: objetivo → pasos → resultado → reflexión.</li>
+              <li>Incluye referencias y enlaces utilizados.</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
+  </header>
 
-    <div class="help">
-      <span class="pill"><span class="kbd">Espacio</span> Play/Pausa</span>
-      <span class="pill"><span class="kbd">N</span> Paso</span>
-      <span class="pill"><span class="kbd">R</span> Aleatorio</span>
-      <span class="pill"><span class="kbd">C</span> Limpiar</span>
-      <span class="pill"><span class="kbd">W</span> Toro ON/OFF</span>
-      <span class="pill"><span class="kbd">G</span> Rejilla</span>
-      <span class="pill"><span class="kbd">+</span>/<span class="kbd">−</span> Zoom · <span class="kbd">←→↑↓</span> Pan</span>
-      <span class="pill">Click = pintar · Click derecho = borrar · Arrastrar = dibujar</span>
+  <!-- Filtro rápido por RA -->
+  <div class="sticky-top py-2" style="background:#0b1220;border-bottom:1px solid rgba(255,255,255,.06)">
+    <div class="container d-flex gap-2 align-items-center flex-wrap">
+      <span class="text-white-50 small"><i class="bi bi-funnel"></i> Filtrar por RA:</span>
+      <select id="filterRA" class="form-select form-select-sm bg-dark text-light">
+        <option value="all">Todos</option>
+        <option value="RA1">RA1 · Digitalización e IT/OT</option>
+        <option value="RA2">RA2 · Tecnologías habilitadoras</option>
+        <option value="RA3">RA3 · Cloud / Edge / Fog</option>
+        <option value="RA4">RA4 · Inteligencia Artificial</option>
+        <option value="RA5">RA5 · Datos · Big Data · Seguridad</option>
+        <option value="RA6">RA6 · Proyecto de Transformación</option>
+      </select>
+      <span class="ms-auto badge center-tag">Centro: IES Camas · Grupo: 1º DAW</span>
     </div>
   </div>
 
-  <!-- p5.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <main class="py-4">
+    <div class="container">
+      <div class="row g-4" id="topics">
+
+        <!-- ========================== TEMA 1 ========================== -->
+        <section class="col-12 topic RA1">
+          <div class="p-4 rounded-4 topic-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0"><span class="badge badge-soft pill me-2">Tema 1</span> Digitalización e impacto en IT/OT</h5>
+              <span class="pill badge-soft">RA1 · CE1–CE3</span>
+            </div>
+            <p class="text-white-50 mb-3">Conceptos base y efectos organizativos de la digitalización.</p>
+            <div class="row g-3">
+              <!-- CE1 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title mb-1">CE1 · Definir digitalización</h6>
+                  <p class="small text-white-50 mb-2">Descripción del concepto y alcance.</p>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Microensayo (150–200 palabras) “¿Qué es la digitalización?” + 3 ejemplos en IES Camas o tu entorno.
+                  </div>
+                </div>
+              </div>
+              <!-- CE2 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title mb-1">CE2 · Relación con la organización</h6>
+                  <p class="small text-white-50 mb-2">Impacto en procesos y estructura.</p>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Mapa de procesos “AS-IS vs TO-BE” (diagrama + texto breve) para un centro/pyme local.
+                  </div>
+                </div>
+              </div>
+              <!-- CE3 -->
+              <div class="col-md-12">
+                <div class="p-3 rounded-3 ce-card">
+                  <h6 class="ce-title mb-1">CE3 · Diferencias IT vs OT</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Cuadro comparativo IT/OT (objetivos, redes, dispositivos, riesgos) + 1 caso donde colaboren.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================== TEMA 2 ========================== -->
+        <section class="col-12 topic RA1">
+          <div class="p-4 rounded-4 topic-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0"><span class="badge badge-soft pill me-2">Tema 2</span> Mapeo de procesos y ventajas de la digitalización</h5>
+              <span class="pill badge-soft">RA1 · CE4–CE7</span>
+            </div>
+            <p class="text-white-50 mb-3">Departamentos IT, tecnologías en negocio/planta y beneficios E2E.</p>
+
+            <div class="row g-3">
+              <!-- CE4 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE4 · Departamentos IT típicos</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Inventario de departamentos IT con funciones (Service Desk, Sistemas, Desarrollo, Seguridad) en una pyme.
+                  </div>
+                </div>
+              </div>
+              <!-- CE5 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE5 · Tecnologías en negocio y planta</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Lista de 10 tecnologías (ERP, MES, SCADA, RPA, IoT…) clasificadas por “negocio/planta” con ejemplo.
+                  </div>
+                </div>
+              </div>
+              <!-- CE6 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE6 · Conexión IT–OT</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Diagrama de integración (redes, DMZ, pasarelas) + 3 riesgos y 3 mitigaciones.
+                  </div>
+                </div>
+              </div>
+              <!-- CE7 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE7 · Ventajas E2E en industria</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Caso de estudio: beneficios medibles al digitalizar de extremo a extremo (KPIs antes/después).
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================== TEMA 3 ========================== -->
+        <section class="col-12 topic RA2">
+          <div class="p-4 rounded-4 topic-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0"><span class="badge badge-soft pill me-2">Tema 3</span> Tecnologías habilitadoras: panorama</h5>
+              <span class="pill badge-soft">RA2 · CE1–CE3</span>
+            </div>
+            <p class="text-white-50 mb-3">TDH y su impacto inicial en productos y economía.</p>
+
+            <div class="row g-3">
+              <!-- CE1 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE1 · Identificar TDH</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Fichas de 6 TDH (IA, IoT, Big Data, Blockchain, Ciberseguridad, Robótica): qué es + ejemplo.
+                  </div>
+                </div>
+              </div>
+              <!-- CE2 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE2 · TDH ↔ productos/servicios</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Canvas corto: cómo una TDH mejora un producto/servicio existente (valor, coste, riesgo).
+                  </div>
+                </div>
+              </div>
+              <!-- CE3 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE3 · TDH y economía sostenible</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Miniensayo: vínculo TDH–ODS (energía, residuos, movilidad) con 2 ejemplos locales.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================== TEMA 4 ========================== -->
+        <section class="col-12 topic RA2">
+          <div class="p-4 rounded-4 topic-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0"><span class="badge badge-soft pill me-2">Tema 4</span> TDH aplicadas en sectores</h5>
+            <span class="pill badge-soft">RA2 · CE4–CE7</span>
+            </div>
+            <p class="text-white-50 mb-3">Mercados, mejoras IT/OT e informe técnico.</p>
+
+            <div class="row g-3">
+              <!-- CE4 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE4 · Nuevos mercados por TDH</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Brief de 1 página: 2 mercados emergentes generados por una TDH (tamaño, caso de uso).
+                  </div>
+                </div>
+              </div>
+              <!-- CE5 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE5 · TDH en negocio y planta</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Matriz: impacto de una TDH en front-office (negocio) y shop-floor (planta).
+                  </div>
+                </div>
+              </div>
+              <!-- CE6 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE6 · Mejoras en IT/OT</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Backlog de 8 mejoras priorizadas (valor/esfuerzo) con criterios de aceptación.
+                  </div>
+                </div>
+              </div>
+              <!-- CE7 -->
+              <div class="col-12">
+                <div class="p-3 rounded-3 ce-card">
+                  <h6 class="ce-title">CE7 · Informe tecnologías ↔ áreas</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Informe 2–3 páginas: relaciona TDH, características y áreas de aplicación con ejemplos reales.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================== TEMA 5 ========================== -->
+        <section class="col-12 topic RA3">
+          <div class="p-4 rounded-4 topic-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0"><span class="badge badge-soft pill me-2">Tema 5</span> Cloud Computing: niveles y servicios</h5>
+              <span class="pill badge-soft">RA3 · CE1–CE2</span>
+            </div>
+            <p class="text-white-50 mb-3">IaaS, PaaS, SaaS, FaaS y funciones típicas.</p>
+
+            <div class="row g-3">
+              <!-- CE1 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE1 · Niveles de la cloud</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Infografía propia IaaS/PaaS/SaaS/FaaS + 1 ejemplo gratuito de cada nivel.
+                  </div>
+                </div>
+              </div>
+              <!-- CE2 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE2 · Funciones principales</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Práctica guiada: almacenamiento de objetos gratuito (p. ej., Cloudflare R2/Drive) + subir/leer archivo.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================== TEMA 6 ========================== -->
+        <section class="col-12 topic RA3">
+          <div class="p-4 rounded-4 topic-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0"><span class="badge badge-soft pill me-2">Tema 6</span> Edge, Fog y ventajas de Cloud</h5>
+              <span class="pill badge-soft">RA3 · CE3–CE5</span>
+            </div>
+            <p class="text-white-50 mb-3">Computación cercana al dato y beneficios en sistemas conectados.</p>
+
+            <div class="row g-3">
+              <!-- CE3 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE3 · Edge computing</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Diagrama de red: sensor → edge (Raspberry/PC) → cloud, con latencias estimadas.
+                  </div>
+                </div>
+              </div>
+              <!-- CE4 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE4 · Fog y Mist</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Tabla comparativa Edge–Fog–Mist (ubicación, casos, limitaciones) + ejemplo local.
+                  </div>
+                </div>
+              </div>
+              <!-- CE5 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE5 · Ventajas en conectados</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Lista priorizada de ventajas (escalado, resiliencia, costes) aplicada a un proyecto IoT escolar.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================== TEMA 7 ========================== -->
+        <section class="col-12 topic RA4">
+          <div class="p-4 rounded-4 topic-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0"><span class="badge badge-soft pill me-2">Tema 7</span> Fundamentos de Inteligencia Artificial</h5>
+              <span class="pill badge-soft">RA4 · CE1–CE3</span>
+            </div>
+            <p class="text-white-50 mb-3">Conceptos y áreas de aplicación principales.</p>
+
+            <div class="row g-3">
+              <!-- CE1 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE1 · Concepto de IA</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Definición propia (≤180 palabras) + 5 términos clave explicados en una línea cada uno.
+                  </div>
+                </div>
+              </div>
+              <!-- CE2 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE2 · Tipos de IA</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Mapa: simbólica, ML (sup./no sup./refuerzo), generativa; con 1 ejemplo por tipo.
+                  </div>
+                </div>
+              </div>
+              <!-- CE3 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE3 · Áreas de aplicación</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Cuadro de 6 áreas (visión, NLP, recomendación, mantenimiento predictivo, salud, educación) con caso.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================== TEMA 8 ========================== -->
+        <section class="col-12 topic RA4">
+          <div class="p-4 rounded-4 topic-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0"><span class="badge badge-soft pill me-2">Tema 8</span> IA aplicada en la empresa</h5>
+              <span class="pill badge-soft">RA4 · CE4–CE7</span>
+            </div>
+            <p class="text-white-50 mb-3">Datos masivos, sectores, lenguajes y caso propio.</p>
+
+            <div class="row g-3">
+              <!-- CE4 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE4 · Importancia de Big Data</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Mini-experimento: dataset pequeño → consulta/visualización simple → insight útil (capturas).
+                  </div>
+                </div>
+              </div>
+              <!-- CE5 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE5 · Sectores con IA</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Top-3 sectores con mayor adopción (con 2–3 referencias) y un caso español.
+                  </div>
+                </div>
+              </div>
+              <!-- CE6 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE6 · Lenguajes en IA</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> “Hello AI” en Python (scikit/transformers) o pseudocódigo comentado si no puedes ejecutar.
+                  </div>
+                </div>
+              </div>
+              <!-- CE7 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE7 · Influencia de la IA en el sector</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea (práctica estrella):</strong> Instala localmente <em>Llama</em> o <em>DeepSeek</em> y ejecuta 3 prompts con tiempos/uso observados. Conclusión para tu sector.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================== TEMA 9 ========================== -->
+        <section class="col-12 topic RA5">
+          <div class="p-4 rounded-4 topic-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0"><span class="badge badge-soft pill me-2">Tema 9</span> Economía del dato y ciclo de vida</h5>
+              <span class="pill badge-soft">RA5 · CE1–CE4</span>
+            </div>
+            <p class="text-white-50 mb-3">De dato a información, Big Data y sus características.</p>
+
+            <div class="row g-3">
+              <!-- CE1 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE1 · Dato vs Información</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> 6 ejemplos; clasifica qué es dato y qué es información, explicando la diferencia.
+                  </div>
+                </div>
+              </div>
+              <!-- CE2 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE2 · Ciclo de vida del dato</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Diagrama (captación→almacenamiento→procesado→análisis→archivado→borrado seguro) con herramientas.
+                  </div>
+                </div>
+              </div>
+              <!-- CE3 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE3 · Big Data, análisis, minería e IA</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Mapa conceptual conectando términos + ejemplo de pipeline sencillo.
+                  </div>
+                </div>
+              </div>
+              <!-- CE4 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE4 · Características de Big Data</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Explica las “V” (Volumen, Velocidad, Variedad, Veracidad, Valor) con 1 ejemplo cada una.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================== TEMA 10 ========================== -->
+        <section class="col-12 topic RA5">
+          <div class="p-4 rounded-4 topic-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0"><span class="badge badge-soft pill me-2">Tema 10</span> Datos en la nube y seguridad</h5>
+              <span class="pill badge-soft">RA5 · CE5–CE9</span>
+            </div>
+            <p class="text-white-50 mb-3">Ciencia de datos, almacenamiento cloud y protección.</p>
+
+            <div class="row g-3">
+              <!-- CE5 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE5 · Etapas de Data Science</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Notebook corto (o capturas) con limpieza→gráfico→conclusión usando un dataset abierto.
+                  </div>
+                </div>
+              </div>
+              <!-- CE6 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE6 · Almacenamiento en la nube</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Procedimiento ilustrado para crear un bucket/drive y subir/compartir de forma segura.
+                  </div>
+                </div>
+              </div>
+              <!-- CE7 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE7 · Importancia del cloud</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Ensayo de una página: beneficios y riesgos de usar cloud para datos críticos.
+                  </div>
+                </div>
+              </div>
+              <!-- CE8 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE8 · Enfoques de ciberseguridad</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Checklist aplicable (cifrado, copias, control de acceso, MFA, registro de auditoría) a 2 entornos.
+                  </div>
+                </div>
+              </div>
+              <!-- CE9 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE9 · Seguridad y regulación</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Resumen comparado RGPD/ENS (3 obligaciones + 3 medidas técnicas) con referencias.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================== TEMA 11 ========================== -->
+        <section class="col-12 topic RA6">
+          <div class="p-4 rounded-4 topic-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0"><span class="badge badge-soft pill me-2">Tema 11</span> Plan estratégico de transformación</h5>
+              <span class="pill badge-soft">RA6 · CE1–CE5</span>
+            </div>
+            <p class="text-white-50 mb-3">Objetivos, áreas y necesidades de la empresa.</p>
+
+            <div class="row g-3">
+              <!-- CE1 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE1 · Objetivos estratégicos</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Define 5 objetivos SMART y 5 KPIs para una empresa seleccionada.
+                  </div>
+                </div>
+              </div>
+              <!-- CE2 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE2 · Áreas de producción/negocio</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Organigrama funcional con descripción de 6 áreas clave y responsables.
+                  </div>
+                </div>
+              </div>
+              <!-- CE3 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE3 · Áreas digitalizables</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Radar de madurez digital por área (0–5) con justificación breve.
+                  </div>
+                </div>
+              </div>
+              <!-- CE4 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE4 · Encaje entre áreas</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Diagrama de dependencias entre áreas digitalizadas y no digitalizadas (BPMN/UML simple).
+                  </div>
+                </div>
+              </div>
+              <!-- CE5 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE5 · Necesidades presentes y futuras</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Lista priorizada de necesidades (1 año / 3 años) en forma de historias de usuario.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================== TEMA 12 ========================== -->
+        <section class="col-12 topic RA6">
+          <div class="p-4 rounded-4 topic-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0"><span class="badge badge-soft pill me-2">Tema 12</span> Proyecto final de digitalización</h5>
+              <span class="pill badge-soft">RA6 · CE6–CE11</span>
+            </div>
+            <p class="text-white-50 mb-3">Tecnologías, seguridad, datos, plataformas, documentación y RR. HH.</p>
+
+            <div class="row g-3">
+              <!-- CE6 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE6 · Áreas ↔ Tecnologías</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Matriz área–tecnología (ERP, CRM, CMS, IoT, BI, RPA, IA) con objetivo y coste estimado.
+                  </div>
+                </div>
+              </div>
+              <!-- CE7 -->
+              <div class="col-md-6">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE7 · Brechas de seguridad</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Análisis de riesgos por área (amenaza, probabilidad, impacto, control propuesto).
+                  </div>
+                </div>
+              </div>
+              <!-- CE8 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE8 · Tratamiento y análisis de datos</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Plan de datos: origen, calidad, almacenamiento, analítica y métricas clave (1 página).
+                  </div>
+                </div>
+              </div>
+              <!-- CE9 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE9 · Infraestructuras y plataformas</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Arquitectura objetivo (diagrama): red, cloud, apps y plataformas de soporte.
+                  </div>
+                </div>
+              </div>
+              <!-- CE10 -->
+              <div class="col-md-4">
+                <div class="p-3 rounded-3 ce-card h-100">
+                  <h6 class="ce-title">CE10 · Documentar los cambios</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Registro de cambios (changelog) vinculado a la estrategia, con fechas y responsables.
+                  </div>
+                </div>
+              </div>
+              <!-- CE11 -->
+              <div class="col-12">
+                <div class="p-3 rounded-3 ce-card">
+                  <h6 class="ce-title">CE11 · Recursos humanos adecuados</h6>
+                  <div class="task p-3 rounded-3 small">
+                    <strong>Tarea:</strong> Plan de RR. HH.: roles, competencias, plan de formación y cronograma de incorporación.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+  <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.5)">
+  <iframe src="juegoVida.html" 
+          style="position:absolute; top:0; left:0; width:100%; height:100%; border:0; border-radius:16px;" 
+          loading="lazy"
+          allowfullscreen>
+  </iframe>
+</div>
+<p style="text-align:center; margin-top:.5rem;">
+  <a href="juegoVida.html" target="_blank" style="color:#38bdf8; font-weight:600;">Abrir en ventana completa</a>
+</p>
+
+      <div class="mt-4 text-center">
+        <p class="footer-note small">Plantilla creada para FP DAW1 · Módulo Digitalización (Código 1665, 30h, 3 ECTS). Personaliza tareas y rúbricas según tu centro.</p>
+      </div>
+    </div>
+  </main>
+
   <script>
-    // Juego de la Vida 2.0 — p5.js
-    // - Reglas personalizables (B/S) + presets
-    // - Toroide ON/OFF, zoom y pan
-    // - Pincel y estampado de patrones
-    // - Velocidad, celda, densidad
-    // - Celdas con edad y color HSB por antigüedad
-
-    let running = true;
-    let grid, nextGrid, cols, rows;
-    let cellSize = 10;
-    let wrapEdges = true;
-    let showGrid = false;
-    let rule = {B:new Set([3]), S:new Set([2,3])};
-    let generations = 0;
-    let aliveCount = 0;
-    let speed = 20;
-
-    let cam = { x:0, y:0, zoom:1 };
-
-    let stampKind = 'brush';
-    let brushSize = 2;
-
-    const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-
-    function parseRule(str){
-      const s = String(str).toUpperCase().split(' ').join('');
-      const parts = s.split('/');
-      if(parts.length!==2) return null;
-      if(!parts[0].startsWith('B') || !parts[1].startsWith('S')) return null;
-      const b = parts[0].slice(1), sPart = parts[1].slice(1);
-      const B = new Set([...b].map(n=>Number(n)).filter(n=>n>=0&&n<=8));
-      const S = new Set([...sPart].map(n=>Number(n)).filter(n=>n>=0&&n<=8));
-      return {B,S};
-    }
-
-    function allocate(w,h){
-      const a = new Array(h);
-      for(let y=0;y<h;y++){ a[y] = new Int16Array(w); }
-      return a;
-    }
-
-    function resizeWorld(){
-      cols = Math.floor(Math.min(1100, windowWidth*0.95) / cellSize);
-      rows = Math.floor((cols*9/16));
-      grid = allocate(cols, rows);
-      nextGrid = allocate(cols, rows);
-      generations = 0; aliveCount = 0; cam = {x:0,y:0,zoom:1};
-    }
-
-    function randomize(density=0.25){
-      aliveCount = 0;
-      for(let y=0;y<rows;y++){
-        for(let x=0;x<cols;x++){
-          const alive = Math.random() < density ? 1 : 0;
-          grid[y][x] = alive;
-          if(alive) aliveCount++;
-        }
-      }
-    }
-
-    function clearWorld(){ for(let y=0;y<rows;y++){ grid[y].fill(0); } generations=0; aliveCount=0; }
-
-    function neighbors(x,y){
-      let n=0;
-      for(let dy=-1; dy<=1; dy++){
-        for(let dx=-1; dx<=1; dx++){
-          if(dx===0 && dy===0) continue;
-          let nx=x+dx, ny=y+dy;
-          if(wrapEdges){
-            if(nx<0) nx=cols-1; else if(nx>=cols) nx=0;
-            if(ny<0) ny=rows-1; else if(ny>=rows) ny=0;
-            if(grid[ny][nx]>0) n++;
-          } else {
-            if(nx>=0 && nx<cols && ny>=0 && ny<rows){ if(grid[ny][nx]>0) n++; }
-          }
-        }
-      }
-      return n;
-    }
-
-    function step(){
-      let newAlive=0;
-      for(let y=0;y<rows;y++){
-        for(let x=0;x<cols;x++){
-          const alive = grid[y][x]>0;
-          const k = neighbors(x,y);
-          let next = 0;
-          if(!alive && rule.B.has(k)) next=1;
-          else if(alive && rule.S.has(k)) next=grid[y][x]+1;
-          else next=0;
-          nextGrid[y][x] = next;
-          if(next>0) newAlive++;
-        }
-      }
-      const tmp = grid; grid = nextGrid; nextGrid = tmp;
-      generations++; aliveCount=newAlive;
-    }
-
-    function setup(){
-      const w = Math.min(1200, windowWidth*0.96);
-      const h = Math.round(w*9/16);
-      const c = createCanvas(w,h);
-      c.parent('sketch');
-      noStroke();
-      colorMode(HSB, 360, 100, 100, 255);
-      resizeWorld();
-      randomize(0.25);
-      hookUI();
-      window.addEventListener('contextmenu', e=>{ e.preventDefault(); });
-    }
-
-    function windowResized(){
-      const w = Math.min(1200, windowWidth*0.96);
-      const h = Math.round(w*9/16);
-      resizeCanvas(w,h);
-      resizeWorld();
-    }
-
-    let acc=0;
-    function draw(){
-      background(11,18,32);
-      push();
-      translate(width/2 + cam.x, height/2 + cam.y);
-      scale(cam.zoom);
-      translate(-cols*cellSize/2, -rows*cellSize/2);
-
-      if(showGrid){
-        stroke(25,40,70,80); strokeWeight(1);
-        for(let x=0;x<=cols;x++){ line(x*cellSize,0, x*cellSize, rows*cellSize); }
-        for(let y=0;y<=rows;y++){ line(0,y*cellSize, cols*cellSize, y*cellSize); }
-        noStroke();
-      }
-
-      for(let y=0;y<rows;y++){
-        for(let x=0;x<cols;x++){
-          const age = grid[y][x];
-          if(age>0){
-            const hue = map(Math.min(age,30), 1,30, 170, 0);
-            const alpha = clamp(60 + age*6, 60, 240);
-            fill(hue, 80, 95, alpha);
-            rect(x*cellSize, y*cellSize, cellSize, cellSize, 2);
-          }
-        }
-      }
-      pop();
-
-      drawHUD();
-
-      const dt = deltaTime/1000;
-      acc += dt;
-      const interval = 1/Math.max(1,speed);
-      while(running && acc>=interval){ acc -= interval; step(); }
-
-      if(mouseIsPressed) paintAtMouse();
-    }
-
-    function drawHUD(){
-      push();
-      textFont('system-ui'); textSize(12); noStroke();
-      fill(15,26,46,220); rect(10,10, 300, 52, 10);
-      fill(231,238,252);
-      const fps = Math.round(frameRate());
-      const rB = [...rule.B].sort().join('');
-      const rS = [...rule.S].sort().join('');
-      text(`gen: ${generations}   vivos: ${aliveCount}   fps: ${fps}\nregla: B${rB}/S${rS}   toro: ${wrapEdges?'ON':'OFF'}   zoom: ${cam.zoom.toFixed(2)}`, 22, 22);
-      pop();
-    }
-
-    function worldFromScreen(mx,my){
-      const x = (mx - width/2 - cam.x) / cam.zoom + cols*cellSize/2;
-      const y = (my - height/2 - cam.y) / cam.zoom + rows*cellSize/2;
-      const gx = Math.floor(x / cellSize);
-      const gy = Math.floor(y / cellSize);
-      return {gx,gy};
-    }
-
-    function setCell(x,y,val){
-      if(wrapEdges){ x = (x%cols+cols)%cols; y = (y%rows+rows)%rows; }
-      if(x>=0 && x<cols && y>=0 && y<rows){ grid[y][x] = val? Math.max(1,grid[y][x]||1) : 0; }
-    }
-
-    function paintAtMouse(){
-      const {gx,gy} = worldFromScreen(mouseX, mouseY);
-      if(stampKind==='brush' || stampKind==='erase'){
-        const b = brushSize;
-        for(let yy=-b; yy<=b; yy++){
-          for(let xx=-b; xx<=b; xx++){
-            if(Math.abs(xx)+Math.abs(yy) <= b){ setCell(gx+xx, gy+yy, (stampKind==='brush') ? 1 : 0); }
-          }
-        }
-      } else {
-        stampPattern(stampKind, gx, gy, mouseButton===RIGHT);
-      }
-    }
-
-    const patterns = {
-      glider:[ [1,0],[2,1],[0,2],[1,2],[2,2] ],
-      lwss:[ [0,1],[3,1],[4,2],[0,3],[4,3],[1,4],[2,4],[3,4],[4,4] ],
-      pulsar:(()=>{
-        const s = new Set(); const add=(x,y)=>s.add(`${x},${y}`);
-        const pts=[[2,0],[3,0],[4,0],[8,0],[9,0],[10,0],[0,2],[5,2],[7,2],[12,2],[0,3],[5,3],[7,3],[12,3],[0,4],[5,4],[7,4],[12,4],[2,5],[3,5],[4,5],[8,5],[9,5],[10,5],[2,7],[3,7],[4,7],[8,7],[9,7],[10,7],[0,8],[5,8],[7,8],[12,8],[0,9],[5,9],[7,9],[12,9],[0,10],[5,10],[7,10],[12,10],[2,12],[3,12],[4,12],[8,12],[9,12],[10,12]];
-        pts.forEach(([x,y])=>add(x-6,y-6));
-        return [...s].map(s=>s.split(',').map(Number));
-      })(),
-      gosper:(()=>{
-        const pts=[[1,5],[1,6],[2,5],[2,6],[11,5],[11,6],[11,7],[12,4],[12,8],[13,3],[13,9],[14,3],[14,9],[15,6],[16,4],[16,8],[17,5],[17,6],[17,7],[18,6],[21,3],[21,4],[21,5],[22,3],[22,4],[22,5],[23,2],[23,6],[25,1],[25,2],[25,6],[25,7],[35,3],[35,4],[36,3],[36,4]];
-        const minx=Math.min(...pts.map(p=>p[0])), miny=Math.min(...pts.map(p=>p[1]));
-        const cx=Math.round((Math.max(...pts.map(p=>p[0]))+minx)/2);
-        const cy=Math.round((Math.max(...pts.map(p=>p[1]))+miny)/2);
-        return pts.map(([x,y])=>[x-cx,y-cy]);
-      })()
-    };
-
-    function stampPattern(kind, cx, cy, erase){
-      const P = patterns[kind]; if(!P) return;
-      for(const [dx,dy] of P){ setCell(cx+dx, cy+dy, erase?0:1); }
-    }
-
-    function hookUI(){
-      const $ = sel=>document.querySelector(sel);
-      const play=$('#play'), stepBtn=$('#step'), clearBtn=$('#clear'), randBtn=$('#random');
-      const density=$('#density'), ruleBox=$('#rule'), preset=$('#preset');
-      const speedSl=$('#speed'), cellSl=$('#cell');
-      const wrapBtn=$('#wrapBtn'), gridBtn=$('#grid');
-      const stampSel=$('#stamp'), brushSl=$('#brush');
-      const centerBtn=$('#center'), saveBtn=$('#save');
-
-      play.onclick=()=>{ running=!running; play.textContent=running?'⏸️ Pausa':'▶️ Play'; play.setAttribute('aria-pressed', String(running)); };
-      stepBtn.onclick=()=>{ if(!running) step(); };
-      clearBtn.onclick=()=>{ clearWorld(); };
-      randBtn.onclick=()=>{ randomize(parseFloat(density.value)); };
-      density.oninput=()=>{};
-
-      ruleBox.onchange=()=>{ const r=parseRule(ruleBox.value); if(r){ rule=r; ruleBox.style.outline='2px solid #1e2a45'; } else { ruleBox.style.outline='2px solid var(--warn)'; } };
-      preset.onchange=()=>{ if(preset.value!=='custom'){ ruleBox.value=preset.value; const r=parseRule(ruleBox.value); if(r) rule=r; } };
-
-      speedSl.oninput=()=>{ speed=parseInt(speedSl.value,10); };
-      cellSl.oninput=()=>{ cellSize=parseInt(cellSl.value,10); resizeWorld(); };
-
-      wrapBtn.onclick=()=>{ wrapEdges=!wrapEdges; wrapBtn.setAttribute('aria-pressed', String(wrapEdges)); };
-      gridBtn.onclick=()=>{ showGrid=!showGrid; gridBtn.setAttribute('aria-pressed', String(showGrid)); };
-
-      stampSel.onchange=()=>{ stampKind=stampSel.value; };
-      brushSl.oninput=()=>{ brushSize=parseInt(brushSl.value,10); };
-
-      centerBtn.onclick=()=>{ cam={x:0,y:0,zoom:1}; };
-      saveBtn.onclick=()=>{ saveCanvas('vida20','png'); };
-
-      window.addEventListener('keydown', e=>{
-        if(e.key===' '){ e.preventDefault(); play.click(); }
-        if(e.key==='n' || e.key==='N'){ stepBtn.click(); }
-        if(e.key==='c' || e.key==='C'){ clearBtn.click(); }
-        if(e.key==='r' || e.key==='R'){ randBtn.click(); }
-        if(e.key==='w' || e.key==='W'){ wrapBtn.click(); }
-        if(e.key==='g' || e.key==='G'){ gridBtn.click(); }
-        if(e.key==='+' || e.key==='='){ cam.zoom = clamp(cam.zoom*1.1, 0.3, 4); }
-        if(e.key==='-' || e.key==='_'){ cam.zoom = clamp(cam.zoom/1.1, 0.3, 4); }
-        if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
-          const k=e.key; const step=30; if(k==='ArrowLeft') cam.x+=step; if(k==='ArrowRight') cam.x-=step; if(k==='ArrowUp') cam.y+=step; if(k==='ArrowDown') cam.y-=step;
-        }
+    // Filtro simple por RA (muestra/oculta secciones)
+    const select = document.getElementById('filterRA');
+    const topics = document.querySelectorAll('#topics .topic');
+    select.addEventListener('change', e=>{
+      const val = e.target.value;
+      topics.forEach(t=>{
+        if(val==='all'){ t.style.display=''; return; }
+        t.style.display = t.classList.contains(val) ? '' : 'none';
       });
-    }
-
-    function mousePressed(){ paintAtMouse(); }
-
-    window.addEventListener('wheel', (e)=>{
-      if(e.ctrlKey) return;
-      cam.zoom = clamp(cam.zoom * (e.deltaY<0?1.1:0.9), 0.3, 4);
-    }, {passive:true});
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
   </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-

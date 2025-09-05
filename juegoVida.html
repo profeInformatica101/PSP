@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Juego de la Vida 2.0 — p5.js</title>
+  <style>
+    :root{
+      --bg:#0b1220; --ink:#e7eefc; --muted:#9bb1d1; --accent:#fcd34d;
+      --good:#5eead4; --warn:#fca5a5;
+    }
+    html,body{height:100%}
+    body{margin:0; display:grid; place-items:center; background:radial-gradient(1100px 600px at 50% 20%, #14223c 0%, var(--bg) 60%); color:var(--ink); font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,"Helvetica Neue",Arial}
+    #wrap{width:min(1200px,96vw)}
+    #hud{display:flex; gap:.6rem; flex-wrap:wrap; align-items:center; justify-content:space-between; margin:.6rem 0 0}
+    .group{display:flex; gap:.35rem; flex-wrap:wrap; align-items:center}
+    .btn, select, input[type="text"]{background:#0f1a2e; border:1px solid #1e2a45; color:var(--ink); border-radius:.55rem; padding:.45rem .7rem; font-weight:600}
+    .btn{cursor:pointer; user-select:none}
+    .btn[aria-pressed="true"]{outline:2px solid var(--accent);}
+    label{font-size:.9rem; color:var(--muted)}
+    .kbd{border:1px solid #394764; padding:.08rem .4rem; border-radius:.35rem; font-weight:600; color:var(--ink)}
+    canvas{border-radius:18px; box-shadow:0 20px 60px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.06)}
+    .help{margin:.5rem 0 0; color:var(--muted); font-size:.92rem}
+    .help .pill{display:inline-flex; gap:.35rem; align-items:center; background:#0f1a2e; border:1px solid #1e2a45; padding:.28rem .55rem; border-radius:999px; margin-right:.35rem}
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <main id="sketch"></main>
+
+    <div id="hud">
+      <div class="group">
+        <button id="play" class="btn" aria-pressed="true">⏸️ Pausa</button>
+        <button id="step" class="btn">⏭️ Paso</button>
+        <button id="clear" class="btn">🧹 Limpiar</button>
+        <button id="random" class="btn">🎲 Aleatorio</button>
+        <label>densidad <input id="density" type="range" min="0" max="1" step="0.01" value="0.25"></label>
+      </div>
+
+      <div class="group">
+        <label>regla <input id="rule" type="text" value="B3/S23" size="9" spellcheck="false"></label>
+        <select id="preset">
+          <option value="custom">— Presets —</option>
+          <option value="B3/S23">Life (B3/S23)</option>
+          <option value="B36/S23">HighLife (B36/S23)</option>
+          <option value="B2/S">Seeds (B2/S)</option>
+          <option value="B3678/S34678">Day & Night (B3678/S34678)</option>
+          <option value="B1357/S1357">Replicator (B1357/S1357)</option>
+          <option value="B34/S34">34 Life (B34/S34)</option>
+        </select>
+        <label>vel
+          <input id="speed" type="range" min="1" max="60" step="1" value="20">
+        </label>
+        <label>celda
+          <input id="cell" type="range" min="4" max="24" step="1" value="10">
+        </label>
+        <button id="wrapBtn" class="btn" aria-pressed="true">↻ Toro</button>
+        <button id="grid" class="btn" aria-pressed="false"># Rejilla</button>
+      </div>
+
+      <div class="group">
+        <label>patrón
+          <select id="stamp">
+            <option value="brush">Pincel</option>
+            <option value="erase">Borrador</option>
+            <option value="glider">Glider</option>
+            <option value="lwss">LWSS</option>
+            <option value="pulsar">Pulsar</option>
+            <option value="gosper">Gosper Gun</option>
+          </select>
+        </label>
+        <label>tamaño pincel <input id="brush" type="range" min="1" max="6" step="1" value="2"></label>
+        <button id="center" class="btn">🎯 Centrar</button>
+        <button id="save" class="btn">📷 PNG</button>
+      </div>
+    </div>
+
+    <div class="help">
+      <span class="pill"><span class="kbd">Espacio</span> Play/Pausa</span>
+      <span class="pill"><span class="kbd">N</span> Paso</span>
+      <span class="pill"><span class="kbd">R</span> Aleatorio</span>
+      <span class="pill"><span class="kbd">C</span> Limpiar</span>
+      <span class="pill"><span class="kbd">W</span> Toro ON/OFF</span>
+      <span class="pill"><span class="kbd">G</span> Rejilla</span>
+      <span class="pill"><span class="kbd">+</span>/<span class="kbd">−</span> Zoom · <span class="kbd">←→↑↓</span> Pan</span>
+      <span class="pill">Click = pintar · Click derecho = borrar · Arrastrar = dibujar</span>
+    </div>
+  </div>
+
+  <!-- p5.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    // Juego de la Vida 2.0 — p5.js
+    // - Reglas personalizables (B/S) + presets
+    // - Toroide ON/OFF, zoom y pan
+    // - Pincel y estampado de patrones
+    // - Velocidad, celda, densidad
+    // - Celdas con edad y color HSB por antigüedad
+
+    let running = true;
+    let grid, nextGrid, cols, rows;
+    let cellSize = 10;
+    let wrapEdges = true;
+    let showGrid = false;
+    let rule = {B:new Set([3]), S:new Set([2,3])};
+    let generations = 0;
+    let aliveCount = 0;
+    let speed = 20;
+
+    let cam = { x:0, y:0, zoom:1 };
+
+    let stampKind = 'brush';
+    let brushSize = 2;
+
+    const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+
+    function parseRule(str){
+      const s = String(str).toUpperCase().split(' ').join('');
+      const parts = s.split('/');
+      if(parts.length!==2) return null;
+      if(!parts[0].startsWith('B') || !parts[1].startsWith('S')) return null;
+      const b = parts[0].slice(1), sPart = parts[1].slice(1);
+      const B = new Set([...b].map(n=>Number(n)).filter(n=>n>=0&&n<=8));
+      const S = new Set([...sPart].map(n=>Number(n)).filter(n=>n>=0&&n<=8));
+      return {B,S};
+    }
+
+    function allocate(w,h){
+      const a = new Array(h);
+      for(let y=0;y<h;y++){ a[y] = new Int16Array(w); }
+      return a;
+    }
+
+    function resizeWorld(){
+      cols = Math.floor(Math.min(1100, windowWidth*0.95) / cellSize);
+      rows = Math.floor((cols*9/16));
+      grid = allocate(cols, rows);
+      nextGrid = allocate(cols, rows);
+      generations = 0; aliveCount = 0; cam = {x:0,y:0,zoom:1};
+    }
+
+    function randomize(density=0.25){
+      aliveCount = 0;
+      for(let y=0;y<rows;y++){
+        for(let x=0;x<cols;x++){
+          const alive = Math.random() < density ? 1 : 0;
+          grid[y][x] = alive;
+          if(alive) aliveCount++;
+        }
+      }
+    }
+
+    function clearWorld(){ for(let y=0;y<rows;y++){ grid[y].fill(0); } generations=0; aliveCount=0; }
+
+    function neighbors(x,y){
+      let n=0;
+      for(let dy=-1; dy<=1; dy++){
+        for(let dx=-1; dx<=1; dx++){
+          if(dx===0 && dy===0) continue;
+          let nx=x+dx, ny=y+dy;
+          if(wrapEdges){
+            if(nx<0) nx=cols-1; else if(nx>=cols) nx=0;
+            if(ny<0) ny=rows-1; else if(ny>=rows) ny=0;
+            if(grid[ny][nx]>0) n++;
+          } else {
+            if(nx>=0 && nx<cols && ny>=0 && ny<rows){ if(grid[ny][nx]>0) n++; }
+          }
+        }
+      }
+      return n;
+    }
+
+    function step(){
+      let newAlive=0;
+      for(let y=0;y<rows;y++){
+        for(let x=0;x<cols;x++){
+          const alive = grid[y][x]>0;
+          const k = neighbors(x,y);
+          let next = 0;
+          if(!alive && rule.B.has(k)) next=1;
+          else if(alive && rule.S.has(k)) next=grid[y][x]+1;
+          else next=0;
+          nextGrid[y][x] = next;
+          if(next>0) newAlive++;
+        }
+      }
+      const tmp = grid; grid = nextGrid; nextGrid = tmp;
+      generations++; aliveCount=newAlive;
+    }
+
+    function setup(){
+      const w = Math.min(1200, windowWidth*0.96);
+      const h = Math.round(w*9/16);
+      const c = createCanvas(w,h);
+      c.parent('sketch');
+      noStroke();
+      colorMode(HSB, 360, 100, 100, 255);
+      resizeWorld();
+      randomize(0.25);
+      hookUI();
+      window.addEventListener('contextmenu', e=>{ e.preventDefault(); });
+    }
+
+    function windowResized(){
+      const w = Math.min(1200, windowWidth*0.96);
+      const h = Math.round(w*9/16);
+      resizeCanvas(w,h);
+      resizeWorld();
+    }
+
+    let acc=0;
+    function draw(){
+      background(11,18,32);
+      push();
+      translate(width/2 + cam.x, height/2 + cam.y);
+      scale(cam.zoom);
+      translate(-cols*cellSize/2, -rows*cellSize/2);
+
+      if(showGrid){
+        stroke(25,40,70,80); strokeWeight(1);
+        for(let x=0;x<=cols;x++){ line(x*cellSize,0, x*cellSize, rows*cellSize); }
+        for(let y=0;y<=rows;y++){ line(0,y*cellSize, cols*cellSize, y*cellSize); }
+        noStroke();
+      }
+
+      for(let y=0;y<rows;y++){
+        for(let x=0;x<cols;x++){
+          const age = grid[y][x];
+          if(age>0){
+            const hue = map(Math.min(age,30), 1,30, 170, 0);
+            const alpha = clamp(60 + age*6, 60, 240);
+            fill(hue, 80, 95, alpha);
+            rect(x*cellSize, y*cellSize, cellSize, cellSize, 2);
+          }
+        }
+      }
+      pop();
+
+      drawHUD();
+
+      const dt = deltaTime/1000;
+      acc += dt;
+      const interval = 1/Math.max(1,speed);
+      while(running && acc>=interval){ acc -= interval; step(); }
+
+      if(mouseIsPressed) paintAtMouse();
+    }
+
+    function drawHUD(){
+      push();
+      textFont('system-ui'); textSize(12); noStroke();
+      fill(15,26,46,220); rect(10,10, 300, 52, 10);
+      fill(231,238,252);
+      const fps = Math.round(frameRate());
+      const rB = [...rule.B].sort().join('');
+      const rS = [...rule.S].sort().join('');
+      text(`gen: ${generations}   vivos: ${aliveCount}   fps: ${fps}\nregla: B${rB}/S${rS}   toro: ${wrapEdges?'ON':'OFF'}   zoom: ${cam.zoom.toFixed(2)}`, 22, 22);
+      pop();
+    }
+
+    function worldFromScreen(mx,my){
+      const x = (mx - width/2 - cam.x) / cam.zoom + cols*cellSize/2;
+      const y = (my - height/2 - cam.y) / cam.zoom + rows*cellSize/2;
+      const gx = Math.floor(x / cellSize);
+      const gy = Math.floor(y / cellSize);
+      return {gx,gy};
+    }
+
+    function setCell(x,y,val){
+      if(wrapEdges){ x = (x%cols+cols)%cols; y = (y%rows+rows)%rows; }
+      if(x>=0 && x<cols && y>=0 && y<rows){ grid[y][x] = val? Math.max(1,grid[y][x]||1) : 0; }
+    }
+
+    function paintAtMouse(){
+      const {gx,gy} = worldFromScreen(mouseX, mouseY);
+      if(stampKind==='brush' || stampKind==='erase'){
+        const b = brushSize;
+        for(let yy=-b; yy<=b; yy++){
+          for(let xx=-b; xx<=b; xx++){
+            if(Math.abs(xx)+Math.abs(yy) <= b){ setCell(gx+xx, gy+yy, (stampKind==='brush') ? 1 : 0); }
+          }
+        }
+      } else {
+        stampPattern(stampKind, gx, gy, mouseButton===RIGHT);
+      }
+    }
+
+    const patterns = {
+      glider:[ [1,0],[2,1],[0,2],[1,2],[2,2] ],
+      lwss:[ [0,1],[3,1],[4,2],[0,3],[4,3],[1,4],[2,4],[3,4],[4,4] ],
+      pulsar:(()=>{
+        const s = new Set(); const add=(x,y)=>s.add(`${x},${y}`);
+        const pts=[[2,0],[3,0],[4,0],[8,0],[9,0],[10,0],[0,2],[5,2],[7,2],[12,2],[0,3],[5,3],[7,3],[12,3],[0,4],[5,4],[7,4],[12,4],[2,5],[3,5],[4,5],[8,5],[9,5],[10,5],[2,7],[3,7],[4,7],[8,7],[9,7],[10,7],[0,8],[5,8],[7,8],[12,8],[0,9],[5,9],[7,9],[12,9],[0,10],[5,10],[7,10],[12,10],[2,12],[3,12],[4,12],[8,12],[9,12],[10,12]];
+        pts.forEach(([x,y])=>add(x-6,y-6));
+        return [...s].map(s=>s.split(',').map(Number));
+      })(),
+      gosper:(()=>{
+        const pts=[[1,5],[1,6],[2,5],[2,6],[11,5],[11,6],[11,7],[12,4],[12,8],[13,3],[13,9],[14,3],[14,9],[15,6],[16,4],[16,8],[17,5],[17,6],[17,7],[18,6],[21,3],[21,4],[21,5],[22,3],[22,4],[22,5],[23,2],[23,6],[25,1],[25,2],[25,6],[25,7],[35,3],[35,4],[36,3],[36,4]];
+        const minx=Math.min(...pts.map(p=>p[0])), miny=Math.min(...pts.map(p=>p[1]));
+        const cx=Math.round((Math.max(...pts.map(p=>p[0]))+minx)/2);
+        const cy=Math.round((Math.max(...pts.map(p=>p[1]))+miny)/2);
+        return pts.map(([x,y])=>[x-cx,y-cy]);
+      })()
+    };
+
+    function stampPattern(kind, cx, cy, erase){
+      const P = patterns[kind]; if(!P) return;
+      for(const [dx,dy] of P){ setCell(cx+dx, cy+dy, erase?0:1); }
+    }
+
+    function hookUI(){
+      const $ = sel=>document.querySelector(sel);
+      const play=$('#play'), stepBtn=$('#step'), clearBtn=$('#clear'), randBtn=$('#random');
+      const density=$('#density'), ruleBox=$('#rule'), preset=$('#preset');
+      const speedSl=$('#speed'), cellSl=$('#cell');
+      const wrapBtn=$('#wrapBtn'), gridBtn=$('#grid');
+      const stampSel=$('#stamp'), brushSl=$('#brush');
+      const centerBtn=$('#center'), saveBtn=$('#save');
+
+      play.onclick=()=>{ running=!running; play.textContent=running?'⏸️ Pausa':'▶️ Play'; play.setAttribute('aria-pressed', String(running)); };
+      stepBtn.onclick=()=>{ if(!running) step(); };
+      clearBtn.onclick=()=>{ clearWorld(); };
+      randBtn.onclick=()=>{ randomize(parseFloat(density.value)); };
+      density.oninput=()=>{};
+
+      ruleBox.onchange=()=>{ const r=parseRule(ruleBox.value); if(r){ rule=r; ruleBox.style.outline='2px solid #1e2a45'; } else { ruleBox.style.outline='2px solid var(--warn)'; } };
+      preset.onchange=()=>{ if(preset.value!=='custom'){ ruleBox.value=preset.value; const r=parseRule(ruleBox.value); if(r) rule=r; } };
+
+      speedSl.oninput=()=>{ speed=parseInt(speedSl.value,10); };
+      cellSl.oninput=()=>{ cellSize=parseInt(cellSl.value,10); resizeWorld(); };
+
+      wrapBtn.onclick=()=>{ wrapEdges=!wrapEdges; wrapBtn.setAttribute('aria-pressed', String(wrapEdges)); };
+      gridBtn.onclick=()=>{ showGrid=!showGrid; gridBtn.setAttribute('aria-pressed', String(showGrid)); };
+
+      stampSel.onchange=()=>{ stampKind=stampSel.value; };
+      brushSl.oninput=()=>{ brushSize=parseInt(brushSl.value,10); };
+
+      centerBtn.onclick=()=>{ cam={x:0,y:0,zoom:1}; };
+      saveBtn.onclick=()=>{ saveCanvas('vida20','png'); };
+
+      window.addEventListener('keydown', e=>{
+        if(e.key===' '){ e.preventDefault(); play.click(); }
+        if(e.key==='n' || e.key==='N'){ stepBtn.click(); }
+        if(e.key==='c' || e.key==='C'){ clearBtn.click(); }
+        if(e.key==='r' || e.key==='R'){ randBtn.click(); }
+        if(e.key==='w' || e.key==='W'){ wrapBtn.click(); }
+        if(e.key==='g' || e.key==='G'){ gridBtn.click(); }
+        if(e.key==='+' || e.key==='='){ cam.zoom = clamp(cam.zoom*1.1, 0.3, 4); }
+        if(e.key==='-' || e.key==='_'){ cam.zoom = clamp(cam.zoom/1.1, 0.3, 4); }
+        if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){
+          const k=e.key; const step=30; if(k==='ArrowLeft') cam.x+=step; if(k==='ArrowRight') cam.x-=step; if(k==='ArrowUp') cam.y+=step; if(k==='ArrowDown') cam.y-=step;
+        }
+      });
+    }
+
+    function mousePressed(){ paintAtMouse(); }
+
+    window.addEventListener('wheel', (e)=>{
+      if(e.ctrlKey) return;
+      cam.zoom = clamp(cam.zoom * (e.deltaY<0?1.1:0.9), 0.3, 4);
+    }, {passive:true});
+  </script>
+  
+</body>
+</html>
+
