@@ -28,6 +28,26 @@
            radial-gradient(1000px 350px at 90% -20%, rgba(14,165,233,.15),transparent);}
     .small-note{font-size:.85rem;color:#cbd5e1}
     .center-tag{background:rgba(34,197,94,.15);border:1px dashed rgba(34,197,94,.5);color:#86efac}
+    .accordion-button {color:white;}
+     body{
+    min-height:100vh;
+    margin:0;
+    /* Ruta a tu imagen */
+    background-image:
+      linear-gradient( to bottom, rgba(0,0,0,.45), rgba(0,0,0,.45) ),
+      url("image/robot_camas.png");
+   // background-size: cover;         /* cubre toda la pantalla */
+   // background-position: center;    /* centrada */
+    background-attachment: fixed;   /* efecto sutil al hacer scroll */
+    background-repeat: no-repeat;
+    color: #e6edf7;                 /* texto legible encima */
+    height: 50%;
+  }
+
+  /* En móviles evita el parpadeo del background-attachment */
+  @media (max-width: 768px){
+    body{ background-attachment: scroll; }
+  }
   </style>
 </head>
 <body>
