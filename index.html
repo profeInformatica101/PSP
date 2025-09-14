@@ -31,7 +31,7 @@
     .info-official{background:#09101d;border:1px solid var(--soft);border-radius:16px}
     .kpi{background:var(--soft); color:var(--text); border-radius:12px; padding:.5rem .75rem; display:inline-flex; align-items:center; gap:.5rem}
     .kpi i{opacity:.8}
-    .table-sm td,.table-sm th{color:#cbd5e1; border-color:rgba(255,255,255,.08)}
+    .table-sm td,.table-sm th{color:black; border-color:rgba(255,255,255,.08)}
     .accordion-button{background:#0b1323;color:#e6edf7}
     .accordion-item{border:1px solid rgba(255,255,255,.08)}
     .accordion-body{color:#cbd5e1}
@@ -39,6 +39,9 @@
     details summary{cursor:pointer}
     a { color:#38bdf8; }
     code { color:#93c5fd; }
+    /* Tabla alumnos sobre tema oscuro */
+    .table.table-striped.table-bordered td, .table.table-striped.table-bordered th { border-color: rgba(255,255,255,.08); }
+    .form-control.bg-dark{border-color: rgba(255,255,255,.2)}
   </style>
 </head>
 <body>
@@ -103,13 +106,13 @@
             <div class="p-3 rounded-3" style="background:#0b1323">
               <h6 class="text-white-50 mb-2">Ponderación RA (oficial del módulo)</h6>
               <table class="table table-sm mb-2">
-                <thead><tr><th>RA</th><th>%</th><th class="text-white-50">Notas</th></tr></thead>
+                <thead><tr><th>RA</th><th>%</th><th>Notas</th></tr></thead>
                 <tbody>
-                  <tr><td>RA1</td><td>20%</td><td class="text-white-50 small">Procesos · concurrencia</td></tr>
-                  <tr><td>RA2</td><td>20%</td><td class="text-white-50 small">Hilos · sincronización</td></tr>
-                  <tr><td>RA3</td><td>20%</td><td class="text-white-50 small">Sockets · cliente/servidor</td></tr>
-                  <tr><td>RA4</td><td>20%</td><td class="text-white-50 small">Servicios en red</td></tr>
-                  <tr><td>RA5</td><td>20%</td><td class="text-white-50 small">Seguridad de aplicaciones/datos</td></tr>
+                  <tr><td>RA1</td><td>20%</td><td>Procesos · concurrencia</td></tr>
+                  <tr><td>RA2</td><td>20%</td><td>Hilos · sincronización</td></tr>
+                  <tr><td>RA3</td><td>20%</td><td>Sockets · cliente/servidor</td></tr>
+                  <tr><td>RA4</td><td>20%</td><td>Servicios en red</td></tr>
+                  <tr><td>RA5</td><td>20%</td><td>Seguridad de aplicaciones/datos</td></tr>
                 </tbody>
               </table>
               <p class="small-note mb-0">Evaluación continua · ≥5/10 por RA (suma ponderada de sus CE). </p>
@@ -436,6 +439,15 @@
 
       </div>
 
+      <!-- ========================== Alumnos GitHub (DAW2) ========================== -->
+      <section class="col-12 mt-4">
+        <div class="p-4 rounded-4 topic-card">
+          <h5 class="mb-3"><i class="bi bi-github"></i> Alumnos de <b>Desarrollo de Aplicaciones Web</b> (DAW2)</h5>
+          <input type="text" id="filtro" class="form-control bg-dark text-light mb-3" placeholder="Filtrar por nombre de usuario de GitHub" onkeyup="filtrarAlumnos()">
+          <div id="tabla-container"></div>
+        </div>
+      </section>
+
       <div class="mt-4 text-center">
         <p class="footer-note small">
           Página alineada con RA y CE oficiales. Unidades y epígrafes adaptados a UD1–UD5 de PSP. Datos y ponderaciones según tu programación 2025/26. 
@@ -456,6 +468,97 @@
       });
       window.scrollTo({top:0, behavior:'smooth'});
     });
+  </script>
+
+  <!-- === Listado de alumnos GitHub + tabla filtrable === -->
+  <script>
+    const alumnos = [
+      {"github_user": "garchjose", "info": "GCh, J" },
+      { "github_user": "aleaguino", "info": "AN, A" },
+      { "github_user": "Sonicorndb", "info": "BL, D" },
+      { "github_user": "LuBeGar", "info": "BG, L" },
+      { "github_user": "gregoriobs", "info": "BS, G" },
+      { "github_user": "paulaminguez14", "info": "DB, P" },
+      { "github_user": "MarcosDS97", "info": "DS, M" },
+      { "github_user": "EscribanoC", "info": "EF, C" },
+      { "github_user": "ServandoT", "info": "GA, C" },
+      { "github_user": "agutbar", "info": "GB, A" },
+      { "github_user": "Gramaso", "info": "GC, A" },
+      { "github_user": "MariaGlezLozano", "info": "GL, M" },
+      { "github_user": "PabloIQ", "info": "IQ, P" },
+      { "github_user": "Pabloluma", "info": "LM, P" },
+      { "github_user": "MAngelLuqPer", "info": "LP, MA" },
+      { "github_user": "alfonssoo546987", "info": "MR, AI" },
+      { "github_user": "JuanAntonioPanchon", "info": "MP, JA" },
+      { "github_user": "emarvaz", "info": "MV, E" },
+      { "github_user": "CarlosMendezSanchez", "info": "MS, C" },
+      { "github_user": "JoseLaureano1", "info": "MM, JL" },
+      { "github_user": "mangelm", "info": "MD, MA" },
+      { "github_user": "andresmunoz829", "info": "OL, AV" },
+      { "github_user": "Antonio-Olivares4", "info": "MA, AE" },
+      { "github_user": "Ivanpaz4", "info": "PC, I" },
+      { "github_user": "Raillo1", "info": "RR, JR" },
+      { "github_user": "4drielr", "info": "RS, A" },
+      { "github_user": "McAin1234", "info": "RE, R" },
+      { "github_user": "Alejandrovy08", "info": "VY,A" },
+      { "github_user": "manfredi-01", "info": "RM, FA" },
+
+      /* === 3 usuarios de plantilla === */
+      { "github_user": "daw2-plantilla-luisa", "info": "PL, L" },
+      { "github_user": "daw2-plantilla-raul",  "info": "PR, R" },
+      { "github_user": "daw2-plantilla-nora",  "info": "PN, N" }
+    ];
+
+    // Función para generar la tabla de alumnos
+    function generarTabla(alumnosFiltrados) {
+      let tablaHTML = `
+        <table class="table table-striped table-bordered">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Usuario de GitHub</th>
+              <th>Mi-Web-Estática</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      // Genera las filas de la tabla
+      alumnosFiltrados.forEach((alumno, index) => {
+        const usuario = alumno.github_user;
+        const info = alumno.info;
+        const enlaceGitHub = \`https://github.com/\${usuario}\`;
+        const enlaceMiWebEstatica = \`https://\${usuario}.github.io/mi-web-estatica\`;
+
+        tablaHTML += `
+          <tr>
+            <td>\${index + 1}</td>
+            <td><a href="\${enlaceGitHub}" target="_blank" rel="noopener noreferrer">\${usuario}</a></td>
+            <td><a href="\${enlaceMiWebEstatica}" target="_blank" rel="noopener noreferrer">\${info}</a></td>
+          </tr>
+        `;
+      });
+
+      tablaHTML += `
+          </tbody>
+        </table>
+      `;
+
+      // Inserta la tabla en el contenedor
+      document.getElementById('tabla-container').innerHTML = tablaHTML;
+    }
+
+    // Función para filtrar la lista de alumnos
+    function filtrarAlumnos() {
+      const filtro = document.getElementById('filtro').value.toLowerCase();
+      const alumnosFiltrados = alumnos.filter(alumno =>
+        alumno.github_user.toLowerCase().includes(filtro)
+      );
+      generarTabla(alumnosFiltrados);
+    }
+
+    // Genera la tabla inicial con todos los alumnos
+    generarTabla(alumnos);
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
