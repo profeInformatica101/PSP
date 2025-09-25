@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PSP — Tema 1: STDIN/STDOUT/STDERR (Linux Lite) — Ejercicios 1–20</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  body{background:#f8fafc}
+  code,kbd{ color:purple; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+  pre{background:#0f172a;color:#e2e8f0;border-radius:.75rem;padding:1rem;overflow:auto}
+  /* Disuadir copia en bloques de código */
+  .nocopy, .nocopy *{user-select:none;-webkit-user-select:none;-ms-user-select:none}
+  .nocopy{position:relative}
+  .nocopy::after{
+    content:"✋ Escribe el comando (copiado deshabilitado)"; 
+    position:absolute; bottom:.4rem; right:.6rem; 
+    font-size:.75rem; color:#94a3b8; opacity:.8;
+  }
+  .badge-stdin{background:#fde68a;color:#1f2937}   /* amarillo */
+  .badge-stdout{background:#bbf7d0;color:#064e3b}  /* verde    */
+  .badge-stderr{background:#fecaca;color:#7f1d1d}  /* rojo     */
+  .small-muted{font-size:.92rem;color:#64748b}
+</style>
+</head>
+<body>
+<div class="container py-4">
+
+  <!-- Header -->
+  <header class="mb-3">
+    <h1 class="h3 mb-1">PSP — Tema 1: Laboratorio de STDIN/STDOUT/STDERR</h1>
+    <p class="small-muted mb-2">Objetivo: Practicar redirecciones, separación/unión de salidas, códigos de salida y tuberías.</p>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <span class="badge badge-stdin">STDIN (#0)</span>
+      <span class="badge badge-stdout">STDOUT (#1)</span>
+      <span class="badge badge-stderr">STDERR (#2)</span>
+    </div>
+    <p class="small text-muted mt-2 mb-0">Nota: La copia/selección está deshabilitada dentro de los bloques de comandos para fomentar la escritura manual. (No es una barrera absoluta.)</p>
+  </header>
+
+  <!-- Instrucciones de entrega -->
+  <section class="mb-4">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="h5">Instrucciones de entrega y capturas</h2>
+        <ul class="mb-2">
+          <li>ENTREGA (en Moodle): sube tus capturas en un único PDF llamado <strong>PSP_T1_ApellidosNombre_Grupo_Capturas.pdf</strong>.</li>
+          <li>Cada captura debe mostrar: <strong>comando ejecutado</strong> y <strong>salida obtenida</strong>.</li>
+          <li>Incluye al inicio un TXT con tu nombre y grupo: <strong>PSP_T1_ApellidosNombre.txt</strong>.</li>
+        </ul>
+        <p class="mb-1">Script de preparación del entorno:</p>
+        <ul class="mb-0">
+          <li>Descarga <strong> <a href="recursos/crea_lab.sh">crea_lab.sh</a></strong> y ejecuta el script (chmod +x ) </em>.</li>
+         
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ejercicios 1–10 (originales) -->
+  <section class="mb-4" id="lab1-10">
+    <h2 class="h5 mb-3">Ejercicios 1–10 (originales)</h2>
+
+    <div class="row g-4">
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">1) Redirigir STDOUT a archivo</h3>
+<pre class="nocopy"><code>echo "hola" &gt; out.txt
+cat out.txt
+# Esperado: imprime 'hola'
+echo $?  # 0</code></pre>
+      </div></div></div>
+
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">2) Anexar en archivo</h3>
+<pre class="nocopy"><code>echo "hola" &gt; out.txt
+echo "mundo" &gt;&gt; out.txt
+cat out.txt  # Esperado: hola\nmundo</code></pre>
+      </div></div></div>
+
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">3) Solo STDERR a archivo</h3>
+<pre class="nocopy"><code>grep foo *.log 2&gt; err.txt
+cat err.txt  # 'Permission denied' de secret.log</code></pre>
+      </div></div></div>
+
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">4) Unir STDOUT+STDERR</h3>
+<pre class="nocopy"><code>grep foo *.log &gt; all.log 2&gt;&amp;1
+tail -n +1 all.log</code></pre>
+      </div></div></div>
+
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">5) Pipe básico</h3>
+<pre class="nocopy"><code>ls -1 | wc -l  # nº de entradas del dir</code></pre>
+      </div></div></div>
+
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">6) Contar solo archivos</h3>
+<pre class="nocopy"><code>find . -maxdepth 1 -type f | wc -l</code></pre>
+      </div></div></div>
+
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">7) Operadores &amp;&amp; y ||</h3>
+<pre class="nocopy"><code>true &amp;&amp; echo OK
+false || echo FALLA
+false &amp;&amp; echo NUNCA  # no imprime</code></pre>
+      </div></div></div>
+
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">8) Código de salida con grep</h3>
+<pre class="nocopy"><code>grep -q foo app.log; echo $?  # 0
+grep -q xyz app.log; echo $?  # 1 (no encontrado)
+grep -q foo secret.log 2&gt;/dev/null; echo $?  # 2 (error)</code></pre>
+      </div></div></div>
+
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">9) Separar salidas</h3>
+<pre class="nocopy"><code>grep foo *.log 1&gt; stdout.txt 2&gt; stderr.txt
+echo "--- STDOUT ---"; cat stdout.txt
+echo "--- STDERR ---"; cat stderr.txt</code></pre>
+      </div></div></div>
+
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">10) Duplicar salida con tee</h3>
+<pre class="nocopy"><code>grep -n . lines.txt | tee listado.txt
+diff -u listado.txt &lt;(nl -ba lines.txt) || true</code></pre>
+      </div></div></div>
+    </div>
+  </section>
+
+  <!-- Ejercicios 11–20 (extras adaptados a sistema, con operadores y redirecciones) -->
+  <section class="mb-4" id="lab11-20">
+    <h2 class="h5 mb-3">Ejercicios 11–20 (Linux Lite: sistema + operadores + redirecciones)</h2>
+
+    <div class="row g-4">
+      <!-- 11 -->
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">11) Kernel y arquitectura (STDOUT→archivo, STDIN&lt; archivo)</h3>
+<pre class="nocopy"><code>uname -a &gt; sys_uname.txt 2&gt; sys_uname.err
+wc -w &lt; sys_uname.txt     # usa STDIN desde el archivo
+# Objetivo: guardar la salida completa y contar palabras leyendo por STDIN</code></pre>
+      </div></div></div>
+
+      <!-- 12 -->
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">12) Distro con <code>||</code> (fallback) y separación de errores</h3>
+<pre class="nocopy"><code>lsb_release -a &gt; os.txt 2&gt; os.err || cat /etc/os-release &gt; os.txt 2&gt;&gt; os.err
+# Objetivo: si falla lsb_release, usar /etc/os-release. Guardar errores en os.err</code></pre>
+      </div></div></div>
+
+      <!-- 13 -->
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">13) CPU y memoria (pipes + ; + redirecciones)</h3>
+<pre class="nocopy"><code>lscpu 2&gt; cpu.err | sed -n '1,10p' &gt; cpu.txt ; free -h | tee mem.txt
+# Objetivo: capturar primeras líneas de lscpu, errores a cpu.err; y guardar memoria con tee</code></pre>
+      </div></div></div>
+
+      <!-- 14 -->
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">14) Disco: top 5 por uso (pipe + STDERR→/dev/null)</h3>
+<pre class="nocopy"><code>df -h 2&gt;/dev/null | sort -k5 -h | tail -n 5 | tee disk_top.txt
+# Objetivo: ordenar por % de uso, mostrar top 5 y guardar a archivo</code></pre>
+      </div></div></div>
+
+      <!-- 15 -->
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">15) Red: IPs + prueba de ping con <code>&amp;&amp;</code>/<code>||</code></h3>
+<pre class="nocopy"><code>ip -brief a | awk '{print $1, $3}' &gt; ip_ifaces.txt 2&gt; ip.err
+ping -c 1 1.1.1.1 &gt; ping.ok 2&gt; ping.err &amp;&amp; echo "PING OK" &gt;&gt; ping.ok || echo "PING FALLÓ" &gt;&gt; ping.err
+# Objetivo: separar salidas, añadir mensaje según resultado</code></pre>
+      </div></div></div>
+
+      <!-- 16 -->
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">16) Procesos: top CPU (pipes + redirección compuesta)</h3>
+<pre class="nocopy"><code>ps aux | awk 'NR==1; NR&gt;1{print}' | sort -nrk 3,3 | head -n 6 &gt; topcpu.txt 2&gt; topcpu.err
+# Objetivo: cabecera + 5 procesos con mayor %CPU</code></pre>
+      </div></div></div>
+
+      <!-- 17 -->
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">17) Servicios: systemd con fallback y unión de salidas</h3>
+<pre class="nocopy"><code>systemctl list-units --type=service --state=running &gt; services.txt 2&gt;&amp;1 \
+|| service --status-all &gt; services.txt 2&gt;&amp;1
+# Objetivo: si no hay systemd, usar 'service'; unir stdout+stderr</code></pre>
+      </div></div></div>
+
+      <!-- 18 -->
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">18) Logs: errores del arranque (un solo archivo con todo)</h3>
+<pre class="nocopy"><code>journalctl -p err -b --no-pager &gt; boot_errors.log 2&gt;&amp;1 \
+|| dmesg -T | grep -iE 'error|fail' &gt; boot_errors.log 2&gt;&amp;1
+# Objetivo: concentrar errores en boot_errors.log, tanto stdout como stderr</code></pre>
+      </div></div></div>
+
+      <!-- 19 -->
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">19) Sesiones y usuarios (agrupación <code>{ }</code> + STDIN &lt; + códigos)</h3>
+<pre class="nocopy"><code>{ who; last -n 1; } &gt; session.info 2&gt; session.err
+wc -l &lt; session.info &gt; session.lines
+echo "rc who/last: $?" &gt;&gt; session.err
+# Objetivo: agrupar comandos, contar líneas leyendo por STDIN y anotar return code</code></pre>
+      </div></div></div>
+
+      <!-- 20 -->
+      <div class="col-12"><div class="card"><div class="card-body">
+        <h3 class="h6">20) Snapshot del sistema (reporte + errores separados)</h3>
+<pre class="nocopy"><code>{ 
+  echo "# SNAPSHOT $(date)";
+  echo "== Host =="; hostnamectl;
+  echo; echo "== Kernel =="; uname -r;
+  echo; echo "== Disco =="; df -h;
+  echo; echo "== Red =="; ip -brief a;
+} &gt; snapshot.txt 2&gt; snapshot.err
+# Objetivo: generar un informe con stdout a archivo y errores por separado</code></pre>
+      </div></div></div>
+    </div>
+  </section>
+
+  <!-- Checklist -->
+  <section class="mb-5">
+    <h2 class="h6">Checklist de capturas</h2>
+    <ul>
+      <li>Captura 1: Resultado de <code>out.txt</code> (Ej. 1).</li>
+      <li>Captura 2: <code>err.txt</code> con error de permisos (Ej. 3).</li>
+      <li>Captura 3: <code>all.log</code> mostrando stdout+stderr unidos (Ej. 4).</li>
+      <li>Captura 4: Cuenta de entradas (Ej. 5) y solo archivos (Ej. 6).</li>
+      <li>Captura 5: <code>&amp;&amp;</code> y <code>||</code> (Ej. 7).</li>
+      <li>Captura 6: Códigos 0/1/2 con <code>grep</code> (Ej. 8).</li>
+      <li>Captura 7: <code>stdout.txt</code> / <code>stderr.txt</code> por separado (Ej. 9).</li>
+      <li>Captura 8: <code>tee</code> y <code>diff</code> sin diferencias (Ej. 10).</li>
+      <li>Captura 9: <code>ip/ping</code> con <code>&amp;&amp;</code>/<code>||</code> (Ej. 15).</li>
+      <li>Captura 10: <code>snapshot.txt</code> y <code>snapshot.err</code> (Ej. 20).</li>
+    </ul>
+  </section>
+
+  <footer class="text-muted small mb-5">
+    Descriptores: <kbd>0</kbd>=STDIN, <kbd>1</kbd>=STDOUT, <kbd>2</kbd>=STDERR.  
+    Algunos comandos de sistema pueden requerir <code>sudo</code> en Linux Lite.
+  </footer>
+</div>
+
+<script>
+  // Bloquear copia/selección/menú contextual dentro de bloques .nocopy
+  document.querySelectorAll('.nocopy').forEach(el=>{
+    el.addEventListener('copy', e=>e.preventDefault());
+    el.addEventListener('cut',  e=>e.preventDefault());
+    el.addEventListener('contextmenu', e=>e.preventDefault());
+    el.setAttribute('draggable','false');
+  });
+</script>
+</body>
+</html>
+
