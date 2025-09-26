@@ -56,7 +56,24 @@
       </div>
     </div>
   </section>
-
+<!-- Mini-chuleta de operadores usados -->
+<section class="mb-4">
+  <h2 class="h6">Mini-chuleta de operadores usados</h2>
+  <ul class="small-muted">
+    <li><code>&gt;</code>: redirige <strong>STDOUT</strong> (sobrescribe).</li>
+    <li><code>&gt;&gt;</code>: redirige <strong>STDOUT</strong> (añade).</li>
+    <li><code>2&gt;</code>: redirige <strong>STDERR</strong>.</li>
+    <li><code>2&gt;&amp;1</code>: une <strong>STDERR</strong> a donde vaya <strong>STDOUT</strong>.</li>
+    <li><code>&lt; archivo</code>: usa archivo como <strong>STDIN</strong>.</li>
+    <li><code>|</code>: <em>pipe</em>, conecta salida de un comando con la entrada de otro.</li>
+    <li><code>&amp;&amp;</code>: ejecuta el siguiente si el anterior tuvo éxito (rc=0).</li>
+    <li><code>||</code>: ejecuta el siguiente si el anterior falló (rc≠0).</li>
+    <li><code>;</code>: separa comandos siempre, independientemente del resultado.</li>
+    <li><code>{ ...; }</code>: agrupa varios comandos para redirigirlos juntos (ojo: requiere <code>;</code> antes de <code>}</code>).</li>
+    <li><code>&lt;(comando)</code>: sustitución de proceso; trata la salida del comando como un archivo temporal (útil con <code>diff</code>, <code>comm</code>, etc.).</li>
+    <li><code>$?</code>: código de salida del último comando (0 = OK).</li>
+  </ul>
+</section>
   <!-- Ejercicios 1–10 (originales) -->
   <section class="mb-4" id="lab1-10">
     <h2 class="h5 mb-3">Ejercicios 1–10 (originales)</h2>
