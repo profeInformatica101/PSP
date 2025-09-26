@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="es" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RA1 · Process & ProcessBuilder · Laboratorio interactivo</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body{background:#f8fafc}
+    code{color:purple}
+    code,kbd,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+    pre{background:#0f172a;color:#e2e8f0;border-radius:.75rem;padding:1rem;overflow:auto}
+    .small-muted{font-size:.92rem;color:#64748b}
+    .card{border-radius:1rem}
+  </style>
+</head>
+<body>
+<div class="container my-4">
+  <section class="mb-4">
+    <h2 class="h5 mb-2">RA1 · Process / ProcessBuilder (Carrusel 0–11)</h2>
+    <p class="small-muted mb-3">
+      Objetivo: desarrollar aplicaciones con varios procesos aplicando principios de concurrencia y paralelismo.
+      Cada ejercicio explica métodos Java, comandos del SO y el criterio RA1 al que contribuye.
+    </p>
+
+    <div id="ejCarousel" class="carousel slide" data-bs-ride="false" data-bs-touch="true">
+      <!-- Indicadores -->
+      <div class="carousel-indicators">
+        <button type="button" data-bs-target="#ejCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Ej 0"></button>
+        <button type="button" data-bs-target="#ejCarousel" data-bs-slide-to="1" aria-label="Ej 1"></button>
+        <button type="button" data-bs-target="#ejCarousel" data-bs-slide-to="2" aria-label="Ej 2"></button>
+        <button type="button" data-bs-target="#ejCarousel" data-bs-slide-to="3" aria-label="Ej 3"></button>
+        <button type="button" data-bs-target="#ejCarousel" data-bs-slide-to="4" aria-label="Ej 4"></button>
+        <button type="button" data-bs-target="#ejCarousel" data-bs-slide-to="5" aria-label="Ej 5"></button>
+        <button type="button" data-bs-target="#ejCarousel" data-bs-slide-to="6" aria-label="Ej 6"></button>
+        <button type="button" data-bs-target="#ejCarousel" data-bs-slide-to="7" aria-label="Ej 7"></button>
+        <button type="button" data-bs-target="#ejCarousel" data-bs-slide-to="8" aria-label="Ej 8"></button>
+        <button type="button" data-bs-target="#ejCarousel" data-bs-slide-to="9" aria-label="Ej 9"></button>
+        <button type="button" data-bs-target="#ejCarousel" data-bs-slide-to="10" aria-label="Ej 10"></button>
+        <button type="button" data-bs-target="#ejCarousel" data-bs-slide-to="11" aria-label="Ej 11"></button>
+      </div>
+
+      <div class="carousel-inner">
+
+        <!-- ========== Slide 0: Utils ========== -->
+        <div class="carousel-item active">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h3 class="h6 mb-2">0) Utilidades y portabilidad de comandos</h3>
+              <p class="small-muted">Base común para todos los ejercicios (portabilidad Linux/Windows).</p>
+<pre><code>// Utils.java
+import java.util.*;
+public class Utils {
+  public static boolean isWindows() {
+    return System.getProperty("os.name").toLowerCase().contains("win");
+  }
+  public static List&lt;String&gt; sh(String cmd) {
+    return isWindows() ? Arrays.asList("cmd","/c",cmd)
+                       : Arrays.asList("sh","-c",cmd);
+  }
+}</code></pre>
+              <p class="small-muted mb-0"><strong>RA1:</strong> Comunicación entre procesos; gestión multiplataforma.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== Slide 1: start/waitFor/exitValue ========== -->
+        <div class="carousel-item">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h3 class="h6 mb-2">1) Ciclo básico: start · waitFor · exitValue</h3>
+              <p><strong>Métodos Java:</strong></p>
+              <ul class="small-muted">
+                <li><code>new ProcessBuilder(List&lt;String&gt;)</code>: define comando.</li>
+                <li><code>start()</code>: lanza el subproceso.</li>
+                <li><code>waitFor()</code>: bloquea hasta finalizar y devuelve RC.</li>
+                <li><code>exitValue()</code>: código de salida (0 OK, ≠0 error).</li>
+              </ul>
+              <p><strong>Comandos SO:</strong> <code>echo hola</code> (Linux) · <code>cmd /c echo hola</code> (Win)</p>
+<pre><code>// Ej1_Basico.java
+import java.util.*;
+public class Ej1_Basico {
+  public static void main(String[] args) throws Exception {
+    Process p = new ProcessBuilder(Utils.sh("echo hola")).start();
+    int rc = p.waitFor();
+    System.out.println("RC=" + rc);
+  }
+}</code></pre>
+              <p class="small-muted mb-0"><strong>RA1:</strong> Características de procesos y su ejecución por el SO.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== Slide 2: Streams E/S ========== -->
+<!-- ========== Slide 2: Streams E/S ========== -->
+<div class="carousel-item">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <h3 class="h6 mb-2">2) E/S de procesos: STDOUT y STDERR</h3>
+      <p><strong>Métodos Java:</strong></p>
+      <ul class="small-muted">
+        <li><code>getInputStream()</code>: lee STDOUT.</li>
+        <li><code>getErrorStream()</code>: lee STDERR.</li>
+        <li><code>BufferedReader</code>: lectura línea a línea (requiere cierre manual con <code>close()</code>).</li>
+      </ul>
+      <p><strong>Comandos SO:</strong> <code>java -version</code> (suele ir a STDERR), <code>echo hola</code> (STDOUT)</p>
+<pre><code>// Ej2_LeerSalida.java
+import java.io.*; 
+import java.util.*;
+
+public class Ej2_LeerSalida {
+  public static void main(String[] args) {
+    // Para convertir bytes en texto:
+    // - InputStreamReader → convierte bytes a caracteres.
+    // - BufferedReader → permite leer líneas completas y cerrar el recurso.
+
+    try {
+      BufferedReader br;
+
+      // ==== PRIMER PROCESO: echo hola ====
+      Process p1 = new ProcessBuilder(Utils.sh("echo hola")).start();
+      br = new BufferedReader(new InputStreamReader(p1.getInputStream()));
+      System.out.println("STDOUT: " + br.readLine());
+      br.close();
+      p1.waitFor();
+
+      // ==== SEGUNDO PROCESO: java -version (va a STDERR) ====
+      Process p2 = new ProcessBuilder(Utils.sh("java -version")).start();
+      br = new BufferedReader(new InputStreamReader(p2.getErrorStream()));
+      String line;
+      while ((line = br.readLine()) != null) {
+        System.out.println(line);
+      }
+      br.close();
+      p2.waitFor();
+
+    } catch (IOException e) {
+      // Error de entrada/salida: no se pudo leer la salida del proceso
+      System.err.println("Error de E/S: " + e.getMessage());
+    } catch (InterruptedException e) {
+      // Otro hilo interrumpió la espera del proceso
+      System.err.println("El proceso fue interrumpido");
+    }
+  }
+}
+</code></pre>
+      <p class="small-muted mb-0"><strong>RA1:</strong> Comunicación entre procesos (canales E/S).</p>
+    </div>
+  </div>
+</div>
+
+        <!-- ========== Slide 3: redirectErrorStream / inheritIO / Redirect a fichero ========== -->
+        <div class="carousel-item">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h3 class="h6 mb-2">3) Redirecciones: unir flujos y enviar a fichero</h3>
+              <p><strong>Métodos Java:</strong></p>
+              <ul class="small-muted">
+                <li><code>redirectErrorStream(true)</code>: STDERR → STDOUT.</li>
+                <li><code>redirectOutput(File)</code>, <code>redirectError(File)</code>: a ficheros.</li>
+                <li><code>inheritIO()</code>: hereda consola actual (útil para depurar).</li>
+              </ul>
+<pre><code>// Ej3_Redir.java
+import java.io.*; import java.util.*;
+public class Ej3_Redir {
+  public static void main(String[] args) throws Exception {
+    File out = new File("salida.txt"), err = new File("errores.txt");
+
+    ProcessBuilder a = new ProcessBuilder(Utils.sh("java -version"));
+    a.redirectErrorStream(true).redirectOutput(out).start().waitFor();
+
+    ProcessBuilder b = new ProcessBuilder(Utils.sh(Utils.isWindows()? "dir" : "ls -la"));
+    b.redirectOutput(out).redirectError(err).start().waitFor();
+
+    new ProcessBuilder(Utils.sh("echo depurando con inheritIO"))
+      .inheritIO().start().waitFor();
+  }
+}</code></pre>
+              <p class="small-muted mb-0"><strong>RA1:</strong> Depuración y documentación de aplicaciones (trazabilidad).</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== Slide 4: directory & environment (contexto) ========== -->
+        <div class="carousel-item">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h3 class="h6 mb-2">4) Contexto: directorio de trabajo y variables de entorno</h3>
+              <p><strong>Métodos Java:</strong></p>
+              <ul class="small-muted">
+                <li><code>directory(File)</code>: cambia el CWD del subproceso.</li>
+                <li><code>environment()</code>: añade/modifica variables de entorno.</li>
+              </ul>
+              <p><strong>Comandos SO:</strong> <code>printenv</code> (Linux), <code>echo %NOMBRE%</code> (Win)</p>
+<pre><code>// Ej4_Contexto.java
+import java.io.*; import java.util.*;
+public class Ej4_Contexto {
+  public static void main(String[] args) throws Exception {
+    ProcessBuilder pb = new ProcessBuilder(Utils.sh(Utils.isWindows()? "echo %APP_ENV%" : "printenv APP_ENV"));
+    pb.directory(new File(".")); // cambia si quieres
+    pb.environment().put("APP_ENV", "dev");
+    Process p = pb.start();
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+      System.out.println("APP_ENV=" + br.readLine());
+    }
+    p.waitFor();
+  }
+}</code></pre>
+              <p class="small-muted mb-0"><strong>RA1:</strong> Gestión de procesos en distintos entornos.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== Slide 5: STDIN (IPC simple) ========== -->
+        <div class="carousel-item">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h3 class="h6 mb-2">5) Envío por STDIN (IPC simple) → <code>sort</code></h3>
+              <p><strong>Métodos Java:</strong> <code>getOutputStream()</code> (escribir a STDIN del proceso)</p>
+              <p><strong>Comando SO:</strong> <code>sort</code> (existe en Linux y Windows)</p>
+<pre><code>// Ej5_Stdin.java
+import java.io.*; import java.util.*;
+public class Ej5_Stdin {
+  public static void main(String[] args) throws Exception {
+    Process p = new ProcessBuilder(Utils.sh("sort")).start();
+    try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
+      bw.write("pera\nmanzana\nuva\n"); // IPC por STDIN
+    }
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+      String line; while ((line = br.readLine()) != null) System.out.println(line);
+    }
+    p.waitFor();
+  }
+}</code></pre>
+              <p class="small-muted mb-0"><strong>RA1:</strong> Comunicación entre procesos; sincronización por fin de stream.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== Slide 6: Pipe manual entre procesos ========== -->
+        <div class="carousel-item">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h3 class="h6 mb-2">6) Encadenado (pipe manual): productor → consumidor</h3>
+              <p><strong>Métodos Java:</strong> conectar <code>getInputStream()</code> del 1º con <code>getOutputStream()</code> del 2º.</p>
+              <p><strong>Comandos SO:</strong> <code>printf</code> / <code>echo</code> → <code>sort</code></p>
+<pre><code>// Ej6_PipeManual.java
+import java.io.*; import java.util.*;
+public class Ej6_PipeManual {
+  public static void main(String[] args) throws Exception {
+    String echoCmd = Utils.isWindows()? "(echo a&amp;echo c&amp;echo b)" : "printf \"a\nc\nb\n\"";
+    Process p1 = new ProcessBuilder(Utils.sh(echoCmd)).start();
+    Process p2 = new ProcessBuilder(Utils.sh("sort")).start();
+    try (InputStream in = p1.getInputStream(); OutputStream out = p2.getOutputStream()) {
+      in.transferTo(out); // canaliza
+    }
+    p1.waitFor();
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(p2.getInputStream()))) {
+      String line; while ((line = br.readLine()) != null) System.out.println(line);
+    }
+    p2.waitFor();
+  }
+}</code></pre>
+              <p class="small-muted mb-0"><strong>RA1:</strong> Programación multiproceso; patrón pipeline.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== Slide 7: timeouts y lifecycle ========== -->
+        <div class="carousel-item">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h3 class="h6 mb-2">7) Lifecycle: timeout, <code>isAlive</code>, <code>destroy</code></h3>
+              <p><strong>Métodos Java:</strong></p>
+              <ul class="small-muted">
+                <li><code>waitFor(long, TimeUnit)</code>: timeout.</li>
+                <li><code>isAlive()</code>: sigue ejecutándose.</li>
+                <li><code>destroy()</code> / <code>destroyForcibly()</code>: termina el proceso.</li>
+              </ul>
+              <p><strong>Comandos SO:</strong> <code>ping -c 5 1.1.1.1</code> (Linux) · <code>ping -n 5 1.1.1.1</code> (Win)</p>
+<pre><code>// Ej7_Timeout.java
+import java.util.*; import java.util.concurrent.*;
+public class Ej7_Timeout {
+  public static void main(String[] args) throws Exception {
+    String ping = Utils.isWindows()? "ping -n 5 1.1.1.1" : "ping -c 5 1.1.1.1";
+    Process p = new ProcessBuilder(Utils.sh(ping)).start();
+    if (!p.waitFor(2, TimeUnit.SECONDS)) {
+      System.out.println("Timeout: destroy()");
+      p.destroy();
+      if (p.isAlive()) { System.out.println("Forzando..."); p.destroyForcibly(); }
+    }
+    System.out.println("Fin. isAlive=" + p.isAlive());
+  }
+}</code></pre>
+              <p class="small-muted mb-0"><strong>RA1:</strong> Gestión de procesos; robustez ante bloqueos.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== Slide 8: ProcessHandle + onExit (inspección/async) ========== -->
+        <div class="carousel-item">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h3 class="h6 mb-2">8) Inspección y callback: <code>ProcessHandle</code> + <code>onExit()</code></h3>
+              <p><strong>Métodos Java:</strong></p>
+              <ul class="small-muted">
+                <li><code>p.pid()</code>, <code>p.info()</code> (<em>command, args, startInstant</em>).</li>
+                <li><code>onExit()</code> → <code>CompletableFuture&lt;Process&gt;</code> (no bloqueante).</li>
+              </ul>
+<pre><code>// Ej8_InfoOnExit.java
+import java.util.*; import java.time.*;
+public class Ej8_InfoOnExit {
+  public static void main(String[] args) throws Exception {
+    Process p = new ProcessBuilder(Utils.sh(Utils.isWindows()? "timeout /t 2 &gt;nul" : "sleep 2")).start();
+    System.out.println("PID=" + p.pid());
+    p.info().command().ifPresent(c -&gt; System.out.println("cmd=" + c));
+    p.onExit().thenAccept(proc -&gt; System.out.println("RC=" + proc.exitValue()));
+    p.waitFor();
+  }
+}</code></pre>
+              <p class="small-muted mb-0"><strong>RA1:</strong> Concurrencia (callbacks), monitorización de procesos.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== Slide 9: Paralelismo real: lanzar N procesos en paralelo ========== -->
+        <div class="carousel-item">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h3 class="h6 mb-2">9) Paralelismo: ejecutar múltiples procesos y sincronizar resultados</h3>
+              <p><strong>Métodos Java:</strong> <code>ExecutorService</code>, <code>Callable</code>, <code>Future.get()</code>, <code>waitFor()</code></p>
+              <p><strong>Comando SO (ejemplo):</strong> <code>echo tarea-i</code> (sustituye por tu CLI real)</p>
+<pre><code>// Ej9_Paralelo.java
+import java.util.*; import java.util.concurrent.*; import java.io.*;
+public class Ej9_Paralelo {
+  public static void main(String[] args) throws Exception {
+    ExecutorService pool = Executors.newFixedThreadPool(4);
+    List&lt;Callable&lt;Integer&gt;&gt; tareas = new ArrayList&lt;&gt;();
+    for (int i=1; i&lt;=6; i++) {
+      final int id = i;
+      tareas.add(() -&gt; {
+        Process p = new ProcessBuilder(Utils.sh("echo tarea-" + id)).start();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+          System.out.println("OUT[" + id + "]: " + br.readLine());
+        }
+        return p.waitFor(); // sincroniza y devuelve RC
+      });
+    }
+    List&lt;Future&lt;Integer&gt;&gt; r = pool.invokeAll(tareas);
+    pool.shutdown();
+    System.out.println("RCs: " + r.stream().map(f -&gt; {
+      try { return String.valueOf(f.get()); } catch(Exception e){ return "ERR"; }
+    }).toList());
+  }
+}</code></pre>
+              <p class="small-muted mb-0"><strong>RA1:</strong> Programación paralela; sincronización y recogida de resultados.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== Slide 10: Monitorización SO (ps/pgrep/top/kill | tasklist/taskkill) ========== -->
+        <div class="carousel-item">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h3 class="h6 mb-2">10) Monitorización de procesos desde Java</h3>
+              <p><strong>Métodos Java:</strong> lectura de salida, composición de comandos portables.</p>
+              <p><strong>Comandos SO:</strong></p>
+              <ul class="small-muted">
+                <li>Linux: <code>ps aux</code>, <code>pgrep -f PATRON</code>, <code>top -b -n 1 | head -n 5</code>, <code>kill PID</code>.</li>
+                <li>Windows: <code>tasklist</code>, <code>findstr /i PATRON</code>, <code>taskkill /PID PID /F</code>.</li>
+              </ul>
+<pre><code>// Ej10_Monitor.java
+import java.io.*; import java.util.*;
+public class Ej10_Monitor {
+  static void run(String cmd) throws Exception {
+    Process p = new ProcessBuilder(Utils.sh(cmd)).start();
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+      String line; while ((line=br.readLine())!=null) System.out.println(line);
+    }
+    p.waitFor();
+  }
+  public static void main(String[] args) throws Exception {
+    if (Utils.isWindows()) {
+      run("tasklist | findstr /i java");
+    } else {
+      run("ps aux | grep -i java | grep -v grep");
+      run("top -b -n 1 | head -n 5");
+    }
+  }
+}</code></pre>
+              <p class="small-muted mb-0"><strong>RA1:</strong> Herramientas de monitorización y gestión de procesos.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== Slide 11: Servicios (systemctl/service/sc) ========== -->
+        <div class="carousel-item">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              <h3 class="h6 mb-2">11) Servicios del sistema (arranque/estado)</h3>
+              <p><strong>Métodos Java:</strong> <code>ProcessBuilder</code> + lectura de salida; manejo de códigos de retorno.</p>
+              <p><strong>Comandos SO:</strong></p>
+              <ul class="small-muted">
+                <li>Linux (systemd): <code>systemctl status|start|stop nombre</code>; fallback: <code>service nombre status</code>.</li>
+                <li>Windows: <code>sc query "Nombre"</code>, <code>sc start|stop "Nombre"</code>.</li>
+              </ul>
+<pre><code>// Ej11_Servicios.java
+import java.io.*; import java.util.*;
+public class Ej11_Servicios {
+  static void print(Process p) throws Exception {
+    try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+      String s; while((s=br.readLine())!=null) System.out.println(s);
+    }
+    p.waitFor();
+  }
+  public static void main(String[] args) throws Exception {
+    String nombre = (args.length&gt;0? args[0] : (Utils.isWindows()? "Dnscache" : "cron"));
+    if (Utils.isWindows()) {
+      print(new ProcessBuilder(Utils.sh("sc query \"" + nombre + "\"")).start());
+    } else {
+      Process p = new ProcessBuilder(Utils.sh("systemctl status " + nombre)).start();
+      int rc = p.waitFor();
+      if (rc!=0) { System.out.println("(fallback) service"); print(new ProcessBuilder(Utils.sh("service " + nombre + " status")).start()); }
+      else { print(new ProcessBuilder(Utils.sh("systemctl status " + nombre)).start()); }
+    }
+  }
+}</code></pre>
+              <p class="small-muted mb-0"><strong>RA1:</strong> Ejecutables/Procesos/Servicios; gestión operativa.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Controles -->
+      <button class="carousel-control-prev" type="button" data-bs-target="#ejCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Anterior</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#ejCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Siguiente</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Mini-mapa RA1 -->
+  <section class="mb-4">
+    <h3 class="h6">Mapa rápido RA1 ↔ ejercicios</h3>
+    <ul class="small-muted">
+      <li><strong>Procesos y ejecución por el SO:</strong> 1, 3, 4, 7.</li>
+      <li><strong>Concurrencia/Callbacks:</strong> 8 (<code>onExit</code>).</li>
+      <li><strong>Paralelismo y sincronización:</strong> 9 (<code>ExecutorService</code>, <code>Future.get()</code>).</li>
+      <li><strong>Comunicación entre procesos (IPC):</strong> 2, 5, 6.</li>
+      <li><strong>Monitorización/gestión:</strong> 10 (ps/top/pgrep/kill), 11 (servicios).</li>
+      <li><strong>Depuración/documentación:</strong> 3 (redirecciones, <code>inheritIO</code>).</li>
+    </ul>
+  </section>
+</div>
+
+<!-- Bootstrap Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+</body>
+</html>
