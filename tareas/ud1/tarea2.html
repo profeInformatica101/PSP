@@ -150,93 +150,197 @@ public class Ej2_LeerSalida {
 </div>
 
         <!-- ========== Slide 3: redirectErrorStream / inheritIO / Redirect a fichero ========== -->
-        <div class="carousel-item">
-          <div class="card border-0 shadow-sm">
-            <div class="card-body">
-              <h3 class="h6 mb-2">3) Redirecciones: unir flujos y enviar a fichero</h3>
-              <p><strong>Métodos Java:</strong></p>
-              <ul class="small-muted">
-                <li><code>redirectErrorStream(true)</code>: STDERR → STDOUT.</li>
-                <li><code>redirectOutput(File)</code>, <code>redirectError(File)</code>: a ficheros.</li>
-                <li><code>inheritIO()</code>: hereda consola actual (útil para depurar).</li>
-              </ul>
+     <!-- ========== Slide 3: redirectErrorStream / inheritIO / Redirect a fichero ========== -->
+<div class="carousel-item">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <h3 class="h6 mb-2">3) Redirecciones: unir flujos y enviar a fichero</h3>
+      <p><strong>Métodos Java:</strong></p>
+      <ul class="small-muted">
+        <li><code>redirectErrorStream(true)</code>: STDERR → STDOUT.</li>
+        <li><code>redirectOutput(File)</code>: sobrescribe (como <code>&gt;</code>).</li>
+        <li><code>Redirect.appendTo(File)</code>: añade al final (como <code>&gt;&gt;</code>).</li>
+        <li><code>redirectError(File)</code>: solo STDERR a fichero.</li>
+        <li><code>inheritIO()</code>: hereda consola actual (útil para depurar).</li>
+      </ul>
 <pre><code>// Ej3_Redir.java
 import java.io.*; import java.util.*;
 public class Ej3_Redir {
   public static void main(String[] args) throws Exception {
     File out = new File("salida.txt"), err = new File("errores.txt");
 
+    // PROCESO A: une STDOUT+STDERR en un solo fichero (sobrescribe)
     ProcessBuilder a = new ProcessBuilder(Utils.sh("java -version"));
     a.redirectErrorStream(true).redirectOutput(out).start().waitFor();
 
+    // PROCESO B: STDOUT → salida.txt (añadiendo, no sobrescribiendo)
+    //            STDERR → errores.txt
     ProcessBuilder b = new ProcessBuilder(Utils.sh(Utils.isWindows()? "dir" : "ls -la"));
-    b.redirectOutput(out).redirectError(err).start().waitFor();
+    b.redirectOutput(ProcessBuilder.Redirect.appendTo(out))
+     .redirectError(err).start().waitFor();
 
+    // PROCESO C: muestra la salida directamente en la misma consola de Java
     new ProcessBuilder(Utils.sh("echo depurando con inheritIO"))
       .inheritIO().start().waitFor();
   }
 }</code></pre>
-              <p class="small-muted mb-0"><strong>RA1:</strong> Depuración y documentación de aplicaciones (trazabilidad).</p>
-            </div>
-          </div>
-        </div>
+      <p class="small-muted mb-0"><strong>RA1:</strong> Depuración y documentación de aplicaciones (trazabilidad de procesos y salidas).</p>
+    </div>
+  </div>
+</div>
+     <!-- ========== Slide 4: directory & environment (contexto) ========== -->
+<div class="carousel-item">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <h3 class="h6 mb-2">4) Contexto: directorio de trabajo y variables de entorno</h3>
 
-        <!-- ========== Slide 4: directory & environment (contexto) ========== -->
-        <div class="carousel-item">
-          <div class="card border-0 shadow-sm">
-            <div class="card-body">
-              <h3 class="h6 mb-2">4) Contexto: directorio de trabajo y variables de entorno</h3>
-              <p><strong>Métodos Java:</strong></p>
-              <ul class="small-muted">
-                <li><code>directory(File)</code>: cambia el CWD del subproceso.</li>
-                <li><code>environment()</code>: añade/modifica variables de entorno.</li>
-              </ul>
-              <p><strong>Comandos SO:</strong> <code>printenv</code> (Linux), <code>echo %NOMBRE%</code> (Win)</p>
-<pre><code>// Ej4_Contexto.java
-import java.io.*; import java.util.*;
+      <p class="small-muted mb-2">
+        <strong>Idea clave:</strong> con <code>ProcessBuilder</code> configuramos el <em>contexto</em> del subproceso
+        (directorio de trabajo y variables de entorno). Luego, al llamar a <code>start()</code>, obtenemos un
+        <code>Process</code> con el que interactuamos (leer salidas, esperar, destruir, etc.).
+      </p>
+
+      <p><strong>Métodos Java:</strong></p>
+      <ul class="small-muted">
+        <li><code>directory(File)</code>: establece el directorio de inicio del subproceso.</li>
+        <li><code>environment()</code>: mapa mutable de variables para el subproceso (no afecta a tu terminal).</li>
+        <li><code>inheritIO()</code>: el subproceso escribe en la misma consola que Java (útil para depurar).</li>
+      </ul>
+
+<pre><code>// Ej4_Contexto.java (actualizado)
+import java.io.*;
+
 public class Ej4_Contexto {
-  public static void main(String[] args) throws Exception {
-    ProcessBuilder pb = new ProcessBuilder(Utils.sh(Utils.isWindows()? "echo %APP_ENV%" : "printenv APP_ENV"));
-    pb.directory(new File(".")); // cambia si quieres
+  public static void main(String [] args) throws Exception {
+    // Comando para listar todas las variables de entorno
+    String cmd = Utils.isWindows() ? "set" : "printenv";
+    ProcessBuilder pb = new ProcessBuilder(Utils.sh(cmd));
+
+    // 1) Directorio de trabajo (donde "nace" el subproceso)
+    pb.directory(new File(".")); // aquí el actual, pero puedes cambiarlo a otra ruta
+
+    // 2) Variables de entorno SOLO para el subproceso (no para tu sesión)
     pb.environment().put("APP_ENV", "dev");
-    Process p = pb.start();
-    try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-      System.out.println("APP_ENV=" + br.readLine());
-    }
-    p.waitFor();
-  }
-}</code></pre>
-              <p class="small-muted mb-0"><strong>RA1:</strong> Gestión de procesos en distintos entornos.</p>
-            </div>
-          </div>
-        </div>
+    pb.environment().put("APP_MODE", "testing");
 
-        <!-- ========== Slide 5: STDIN (IPC simple) ========== -->
-        <div class="carousel-item">
-          <div class="card border-0 shadow-sm">
-            <div class="card-body">
-              <h3 class="h6 mb-2">5) Envío por STDIN (IPC simple) → <code>sort</code></h3>
-              <p><strong>Métodos Java:</strong> <code>getOutputStream()</code> (escribir a STDIN del proceso)</p>
-              <p><strong>Comando SO:</strong> <code>sort</code> (existe en Linux y Windows)</p>
-<pre><code>// Ej5_Stdin.java
-import java.io.*; import java.util.*;
+    // 3) Mostramos la salida directamente en la consola de Java
+    pb.inheritIO().start().waitFor();
+  }
+}
+</code></pre>
+
+      <div class="small-muted">
+        <p class="mb-1"><strong>ProcessBuilder vs Process (en una frase):</strong></p>
+        <ul class="mb-2">
+          <li><strong>ProcessBuilder</strong>: el <em>constructor/fábrica</em> y configurador del proceso (comando, <em>working dir</em>, <em>environment</em>, redirecciones).</li>
+          <li><strong>Process</strong>: el <em>proceso vivo</em> ya ejecutándose (leer <code>STDOUT/ERR</code>, escribir <code>STDIN</code>, <code>waitFor()</code>, <code>destroy()</code>...).</li>
+        </ul>
+        <p class="mb-0">
+          <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/ProcessBuilder.html" target="_blank" rel="noopener">API ProcessBuilder</a> ·
+          <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Process.html" target="_blank" rel="noopener">API Process</a>
+        </p>
+      </div>
+
+      <div class="small-muted mt-2">
+        <p class="mb-1"><strong>Notas rápidas para el alumnado:</strong></p>
+        <ul class="mb-0">
+          <li><em>Directorio de trabajo</em>: afecta a comandos con rutas relativas (p. ej., un <code>ls</code> listará esa carpeta).</li>
+          <li><em>Variables de entorno</em>: viven solo en el subproceso (no “contaminan” tu shell). Útiles para parametrizar ejecución (<em>dev</em>, <em>testing</em>, <em>prod</em>...).</li>
+        </ul>
+      </div>
+
+      <p class="small-muted mb-0"><strong>RA1:</strong> Gestión de procesos en distintos entornos (contexto de ejecución).</p>
+    </div>
+  </div>
+</div>
+
+  <!-- ========== Slide 5: STDIN (IPC simple con entrada de usuario) ========== -->
+<div class="carousel-item">
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <h3 class="h6 mb-2">5) Envío por STDIN (IPC simple) → <code>sort</code> con entrada de teclado</h3>
+
+      <p class="small-muted mb-2">
+        <strong>Idea clave:</strong> nuestro programa Java escribe líneas al <em>STDIN</em> del proceso <code>sort</code>,
+        y después lee el resultado ya ordenado desde su <em>STDOUT</em>. Aquí añadimos también una fruta introducida por el usuario.
+      </p>
+
+      <p><strong>Métodos Java:</strong></p>
+      <ul class="small-muted">
+        <li><code>getOutputStream()</code>: canal para escribir al proceso hijo (su STDIN) → usamos <code>BufferedWriter</code>.</li>
+        <li><code>getInputStream()</code>: canal para leer del proceso hijo (su STDOUT) → usamos <code>BufferedReader</code>.</li>
+        <li><code>waitFor()</code>: sincroniza hasta que el proceso termine.</li>
+      </ul>
+
+      <p class="small-muted mb-2"><strong>Comando SO:</strong> <code>sort</code> (disponible en Linux y Windows).</p>
+
+<pre><code>// Ej5_Stdin.java (con entrada por teclado)
+package psp;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.util.Scanner;
+
 public class Ej5_Stdin {
-  public static void main(String[] args) throws Exception {
-    Process p = new ProcessBuilder(Utils.sh("sort")).start();
-    try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()))) {
-      bw.write("pera\nmanzana\nuva\n"); // IPC por STDIN
-    }
-    try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
-      String line; while ((line = br.readLine()) != null) System.out.println(line);
-    }
-    p.waitFor();
-  }
-}</code></pre>
-              <p class="small-muted mb-0"><strong>RA1:</strong> Comunicación entre procesos; sincronización por fin de stream.</p>
-            </div>
-          </div>
-        </div>
 
+    public static void main(String[] args) throws Exception {
+        // 1) Preparamos lectura por teclado (consola)
+        Scanner sc = new Scanner(System.in);
+
+        // 2) Lanzamos el proceso "sort" (ordenará las líneas de texto que reciba por STDIN)
+        Process p = new ProcessBuilder(Utils.sh("sort")).start();
+
+        try {
+            // 3) Pedimos un dato al usuario para integrarlo en la lista
+            System.out.print("Escribe una fruta: ");
+            String fruta = sc.nextLine();
+
+            // 4) ENVIAR datos al proceso (STDIN):
+            //    - Escribimos varias frutas + la fruta introducida por el usuario.
+            //    - Cerramos el Writer para indicar "fin de datos" al proceso sort.
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
+            bw.write("pera\nmanzana\nuva\n" + fruta + "\n");
+            bw.close(); // &lt;-- importante para que sort empiece a procesar
+
+            // 5) LEER el resultado ordenado del proceso (STDOUT):
+            //    - Consumimos línea a línea hasta que no haya más datos.
+            BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line;
+            System.out.println("\nListado ordenado:");
+            while ((line = br.readLine()) != null) {
+                System.out.println(line);
+            }
+            br.close();
+
+            // 6) Sincronizamos: esperamos a que el proceso termine
+            p.waitFor();
+
+        } catch (Exception e) {
+            // Captura genérica para simplificar en esta práctica
+            System.err.println("Ocurrió un error: " + e.getMessage());
+        } finally {
+            // 7) Buenas prácticas: cerrar recursos creados por nosotros
+            sc.close();
+        }
+    }
+}
+</code></pre>
+
+      <div class="small-muted">
+        <p class="mb-1"><strong>Notas rápidas para el alumnado:</strong></p>
+        <ul class="mb-0">
+          <li><em>Si no cierras</em> el <code>BufferedWriter</code>, <code>sort</code> se queda esperando más datos y no devuelve nada.</li>
+          <li><em>STDIN</em> del proceso hijo ⇢ lo obtenemos con <code>p.getOutputStream()</code> (desde Java “es salida”, hacia el hijo es “entrada”).</li>
+          <li><em>STDOUT</em> del proceso hijo ⇢ lo leemos con <code>p.getInputStream()</code>.</li>
+        </ul>
+      </div>
+
+      <p class="small-muted mb-0"><strong>RA1:</strong> Comunicación entre procesos; sincronización por fin de stream (cierre de STDIN).</p>
+    </div>
+  </div>
+</div>
         <!-- ========== Slide 6: Pipe manual entre procesos ========== -->
         <div class="carousel-item">
           <div class="card border-0 shadow-sm">
