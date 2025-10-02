@@ -10,6 +10,9 @@
     :root{
       --bg-grad-1: #0d6efd;
       --bg-grad-2: #6610f2;
+      --stdin-bg: #fde68a; /* amarillo */
+      --stdout-bg: #bbf7d0; /* verde */
+      --stderr-bg: #fecaca; /* rojo */
     }
     body{background: #f6f8fb;}
     header.hero{background: linear-gradient(135deg,var(--bg-grad-1),var(--bg-grad-2)); color:#fff;}
@@ -21,6 +24,9 @@
     .badge-type{font-weight:600;}
     .note{font-size:.95rem;}
     .method{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    .stream-stdin{background:var(--stdin-bg); color:#78350f; font-weight:600; padding:.2rem .5rem; border-radius:.3rem;}
+    .stream-stdout{background:var(--stdout-bg); color:#065f46; font-weight:600; padding:.2rem .5rem; border-radius:.3rem;}
+    .stream-stderr{background:var(--stderr-bg); color:#7f1d1d; font-weight:600; padding:.2rem .5rem; border-radius:.3rem;}
   </style>
 </head>
 <body>
@@ -62,22 +68,22 @@
                 <tr>
                   <td class="method">getOutputStream()</td>
                   <td><span class="badge text-bg-secondary badge-type">OutputStream</span></td>
-                  <td>Flujo hacia la <span class="kbd">stdin</span> del proceso hijo. Útil para <em>escribir</em> datos en el proceso.</td>
+                  <td>Flujo hacia la <span class="stream-stdin">STDIN (#0)</span> del proceso hijo. Útil para <em>escribir</em> datos en el proceso.</td>
                 </tr>
                 <tr>
                   <td class="method">getInputStream()</td>
                   <td><span class="badge text-bg-secondary badge-type">InputStream</span></td>
-                  <td>Flujo desde la <span class="kbd">stdout</span> del proceso hijo. Útil para <em>leer</em> la salida estándar.</td>
+                  <td>Flujo desde la <span class="stream-stdout">STDOUT (#1)</span> del proceso hijo. Útil para <em>leer</em> la salida estándar.</td>
                 </tr>
                 <tr>
                   <td class="method">getErrorStream()</td>
                   <td><span class="badge text-bg-secondary badge-type">InputStream</span></td>
-                  <td>Flujo desde la <span class="kbd">stderr</span> del proceso hijo para capturar errores.</td>
+                  <td>Flujo desde la <span class="stream-stderr">STDERR (#2)</span> del proceso hijo para capturar errores.</td>
                 </tr>
                 <tr>
                   <td class="method">destroy()</td>
                   <td><span class="badge text-bg-secondary badge-type">void</span></td>
-                  <td>Solicita la <strong>terminación ordenada</strong> del proceso hijo. El comportamiento exacto depende de la implementación y del SO; puede ser normal o forzado. <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Process.html#destroy()" target="_blank" rel="noopener">API oficial</a>.</td>
+                  <td>Solicita la <strong>terminación ordenada</strong> del proceso hijo. El comportamiento exacto depende de la implementación y del SO. <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Process.html#destroy()" target="_blank" rel="noopener">API oficial</a>.</td>
                 </tr>
                 <tr>
                   <td class="method">destroyForcibly()</td>
@@ -108,7 +114,7 @@
             </table>
           </div>
           <div class="small text-muted mb-3">Referencias: <a href="https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/lang/Process.html" target="_blank" rel="noopener">Process (Java SE 17)</a> · <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ProcessBuilder.html" target="_blank" rel="noopener">ProcessBuilder (Java SE 11+)</a></div>
-          <p class="note text-muted mb-0"><strong>Consejo:</strong> usa hilos o <span class="kbd">Executors</span> para leer <span class="kbd">stdout</span> y <span class="kbd">stderr</span> en paralelo y evitar bloqueos por búferes llenos.</p>
+          <p class="note text-muted mb-0"><strong>Consejo:</strong> usa hilos o <span class="kbd">Executors</span> para leer <span class="stream-stdout">STDOUT</span> y <span class="stream-stderr">STDERR</span> en paralelo y evitar bloqueos por búferes llenos.</p>
         </div>
       </div>
     </section>
@@ -154,22 +160,22 @@
                 <tr>
                   <td class="method">redirectErrorStream(boolean)</td>
                   <td><span class="badge text-bg-secondary badge-type">ProcessBuilder</span></td>
-                  <td>Si es <span class="kbd">true</span>, mezcla <span class="kbd">stderr</span> con <span class="kbd">stdout</span>.</td>
+                  <td>Si es <span class="kbd">true</span>, mezcla <span class="stream-stderr">STDERR</span> con <span class="stream-stdout">STDOUT</span>.</td>
                 </tr>
                 <tr>
                   <td class="method">redirectInput(File)</td>
                   <td><span class="badge text-bg-secondary badge-type">ProcessBuilder</span></td>
-                  <td>Redirige la entrada estándar desde un archivo.</td>
+                  <td>Redirige la <span class="stream-stdin">STDIN</span> desde un archivo.</td>
                 </tr>
                 <tr>
                   <td class="method">redirectOutput(File)</td>
                   <td><span class="badge text-bg-secondary badge-type">ProcessBuilder</span></td>
-                  <td>Redirige la salida estándar a un archivo.</td>
+                  <td>Redirige la <span class="stream-stdout">STDOUT</span> a un archivo.</td>
                 </tr>
                 <tr>
                   <td class="method">redirectError(File)</td>
                   <td><span class="badge text-bg-secondary badge-type">ProcessBuilder</span></td>
-                  <td>Redirige la salida de error a un archivo.</td>
+                  <td>Redirige la <span class="stream-stderr">STDERR</span> a un archivo.</td>
                 </tr>
                 <tr>
                   <td class="method">inheritIO()</td>
@@ -209,7 +215,7 @@ System.out.println("Exit code: " + code);
             <span class="badge rounded-pill text-bg-info">Buenas prácticas</span>
           </div>
           <div>
-            Evita bloqueos gestionando los flujos en hilos separados; considera <span class="kbd">redirectErrorStream(true)</span> si no necesitas distinguir errores.
+            Evita bloqueos gestionando los flujos en hilos separados; considera <span class="method">redirectErrorStream(true)</span> si no necesitas distinguir entre <span class="stream-stdout">STDOUT</span> y <span class="stream-stderr">STDERR</span>.
           </div>
         </div>
       </div>
