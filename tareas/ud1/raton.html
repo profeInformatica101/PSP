@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Propuesta: Control de desconexión de ratones en el aula</title>
+  <meta name="description" content="Propuesta para registrar y avisar cuando se desconecta un ratón USB en aulas con Linux (manteniendo Windows como principal). Incluye scripts de ejemplo." />
+  <style>
+    :root{
+      --bg:#0b1220;--panel:#0f1a2e;--panel2:#0c1526;--text:#e2e8f0;--muted:#93a4bf;--accent:#7dd3fc;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--border:#1f2a44;--shadow:0 10px 30px rgba(2,6,23,.5);--mono:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;--radius:16px
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:linear-gradient(180deg,#0b1220 0%,#0a1020 60%,#0b1220 100%);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:1100px;margin:0 auto;padding:32px}
+    .card{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:28px;margin:18px 0}
+    h1{font-size:clamp(26px,3vw,40px);margin:8px 0 4px}
+    h2{font-size:clamp(18px,2.2vw,26px);margin:16px 0 8px}
+    h3{font-size:clamp(16px,2vw,22px);margin:14px 0 6px}
+    p{line-height:1.6;color:var(--text)}
+    .muted{color:var(--muted)}
+    .pill{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border-radius:999px;background:#0f223f;border:1px solid var(--border);font-size:12px}
+    .grid{display:grid;gap:16px}
+    @media(min-width:840px){.grid-2{grid-template-columns:1fr 1fr}}
+    .list{margin:8px 0 0 0;padding:0 0 0 20px}
+    .kbd{font-family:var(--mono);font-size:.95em;background:#0b1a33;border:1px solid var(--border);padding:2px 6px;border-radius:6px}
+    pre{margin:0}
+    .code{position:relative;background:#081528;border:1px solid var(--border);border-radius:12px;overflow:auto}
+    .code pre{font-family:var(--mono);font-size:13.5px;line-height:1.55;color:#e6edf3;padding:16px;min-height:48px}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.18)}
+    .toolbar .title{font-size:12px;color:var(--muted)}
+    .btn{appearance:none;border:1px solid var(--border);background:#0e1d36;color:var(--text);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:600}
+    .btn:hover{filter:brightness(1.1)}
+    .badge{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:#0e1f3a;color:var(--muted)}
+    .callout{border-left:4px solid var(--accent);padding:12px 14px;background:#0b1831;border:1px solid var(--border);border-radius:10px}
+    .hero{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+    .hero h1{flex:1}
+    .toc{display:flex;gap:8px;flex-wrap:wrap}
+    .toc a{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border:1px solid var(--border);border-radius:999px;background:#0e1f3a}
+    footer{margin-top:24px;text-align:center;color:var(--muted);font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card hero">
+      <div class="pill">Propuesta técnica</div>
+      <h1>Control de desconexión de ratones en el aula</h1>
+      <p class="muted">Documento para compartir con el departamento de Informática. Preparado para publicar en GitHub Pages.</p>
+      <div class="toc">
+        <a href="#contexto">Contexto</a>
+        <a href="#idea">Idea general</a>
+        <a href="#ejemplo">Ejemplo de log</a>
+        <a href="#tecnico">Funcionamiento técnico</a>
+        <a href="#ventajas">Ventajas</a>
+        <a href="#deploy">Despliegue rápido</a>
+      </div>
+    </div>
+
+    <section id="contexto" class="card">
+      <h2>Contexto</h2>
+      <p>Actualmente los alumnos trabajan con equipos <strong>Windows</strong>, pero hemos observado que en ocasiones <strong>retiran los ratones</strong> para dificultar el trabajo normal en clase.</p>
+      <p>Para tener un <strong>registro objetivo y centralizado</strong> de estos incidentes, propongo que los equipos cuenten con <strong>un segundo disco con Linux</strong>, de forma que podamos aprovechar herramientas del sistema para automatizar esta tarea de vigilancia.</p>
+    </section>
+
+    <section id="idea" class="card">
+      <h2>✅ Idea general</h2>
+      <ul class="list">
+        <li>Instalar un <strong>Linux ligero</strong> en un disco adicional (manteniendo Windows como principal).</li>
+        <li>Configurar un <strong>script que detecte en tiempo real</strong> cuando se retira un ratón USB.</li>
+        <li>El sistema genera un <strong>registro con fecha, hora, usuario y equipo</strong>.</li>
+        <li>Opcionalmente, se <strong>envía un aviso</strong> al ordenador del profesor o a un correo del departamento.</li>
+      </ul>
+    </section>
+
+    <section id="ejemplo" class="card">
+      <h2>Ejemplo de log automático</h2>
+      <div class="code" data-title="/var/log/raton.log">
+        <div class="toolbar">
+          <span class="title">/var/log/raton.log</span>
+          <button class="btn copy">Copiar</button>
+        </div>
+        <pre>[2025-10-03 10:24:11] Ratón desconectado en aula3-equipo07 (usuario: alumno15)</pre>
+      </div>
+    </section>
+
+    <section id="tecnico" class="card">
+      <h2>🔧 Funcionamiento técnico</h2>
+      <div class="grid grid-2">
+        <div>
+          <h3>1) Regla <code class="kbd">udev</code> (evento real)</h3>
+          <p>Detecta la <em>desconexión</em> del dispositivo con la etiqueta <code class="kbd">ID_INPUT_MOUSE=1</code>.</p>
+          <div class="code" data-title="/etc/udev/rules.d/99-raton.rules">
+            <div class="toolbar"><span class="title">/etc/udev/rules.d/99-raton.rules</span><button class="btn copy">Copiar</button></div>
+            <pre>ACTION=="remove", SUBSYSTEM=="usb", ENV{ID_INPUT_MOUSE}=="1", RUN+="/usr/local/bin/detecta_raton.sh"</pre>
+          </div>
+          <p class="muted" style="margin-top:10px">Tras crear la regla: <span class="kbd">sudo udevadm control --reload-rules</span></p>
+        </div>
+        <div>
+          <h3>2) Script <code class="kbd">bash</code> de registro y aviso</h3>
+          <p>Guarda la hora, el equipo y el usuario; además envía un aviso por red o correo.</p>
+          <div class="code" data-title="/usr/local/bin/detecta_raton.sh">
+            <div class="toolbar"><span class="title">/usr/local/bin/detecta_raton.sh</span><button class="btn copy">Copiar</button></div>
+<pre>#!/bin/bash
+LOGFILE="/var/log/raton.log"
+FECHA=$(date '+%Y-%m-%d %H:%M:%S')
+HOST=$(hostname)
+USER_NAME=$(logname 2>/dev/null || who | awk 'NR==1{print $1}')
+
+# Registrar en log local
+printf '[%s] Ratón desconectado en %s (usuario: %s)\n' "$FECHA" "$HOST" "$USER_NAME" >> "$LOGFILE"
+
+# ---- Opción A: Envío a servidor del profesor (UDP) ----
+# echo "[$FECHA] Mouse OFF | host=$HOST | user=$USER_NAME" | nc -u 192.168.1.100 5000
+
+# ---- Opción B: Envío por correo (requiere mailutils/postfix o ssmtp/msmtp) ----
+# printf 'Asunto: Alerta ratón desconectado (%s)\n\n[%s] Ratón quitado en %s (usuario: %s)\n' "$HOST" "$FECHA" "$HOST" "$USER_NAME" | sendmail departamento@centro.edu
+</pre>
+          </div>
+          <p class="muted" style="margin-top:10px">Permisos: <span class="kbd">sudo chmod +x /usr/local/bin/detecta_raton.sh</span></p>
+        </div>
+      </div>
+
+      <div class="card" style="margin:16px 0 0; background:#0b1831">
+        <h3 style="margin-top:0">3) Servidor receptor (opcional)</h3>
+        <p>Para centralizar avisos en el equipo del profesor:</p>
+        <div class="code" data-title="Escucha UDP en el profesor">
+          <div class="toolbar"><span class="title">Escucha UDP</span><button class="btn copy">Copiar</button></div>
+          <pre>nc -ulvp 5000</pre>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:16px">
+        <strong>Alternativa con cron:</strong> si no se desea usar udev, un script que compruebe cada minuto si hay ratón y reporte ausencia. Menos preciso, pero sencillo de desplegar.
+      </div>
+    </section>
+
+    <section id="ventajas" class="card">
+      <h2>🎯 Ventajas</h2>
+      <ul class="list">
+        <li>Detección automática, sin intervención manual.</li>
+        <li>Registro claro de incidentes (sin depender de testigos).</li>
+        <li>Posibilidad de actuar con datos verificables.</li>
+        <li>Despliegue sencillo: basta con configurar un script en los equipos con Linux.</li>
+      </ul>
+    </section>
+
+    <section id="deploy" class="card">
+      <h2>🚀 Despliegue rápido (resumen)</h2>
+      <ol class="list">
+        <li>Instalar Linux ligero en disco secundario (mantener Windows intacto).</li>
+        <li>Crear <span class="kbd">/usr/local/bin/detecta_raton.sh</span> y dar permisos <span class="kbd">chmod +x</span>.</li>
+        <li>Crear la regla <span class="kbd">/etc/udev/rules.d/99-raton.rules</span> y <span class="kbd">udevadm control --reload-rules</span>.</li>
+        <li>(Opcional) En el ordenador del profesor: <span class="kbd">nc -ulvp 5000</span> para recibir avisos.</li>
+        <li>(Opcional) Configurar envío por correo con <span class="kbd">sendmail</span> o <span class="kbd">msmtp</span>.</li>
+      </ol>
+      <p class="muted">Privacidad: el registro se limita a <em>evento, fecha/hora, equipo y usuario activo</em>. No captura más datos personales.</p>
+    </section>
+
+    <footer>
+      <p>© Departamento de Informática · Propuesta de mejora operativa</p>
+    </footer>
+  </div>
+
+  <script>
+    // Copiar bloques de código
+    document.querySelectorAll('.code').forEach(block => {
+      const btn = block.querySelector('.copy');
+      const pre = block.querySelector('pre');
+      if(!btn || !pre) return;
+      btn.addEventListener('click', async () => {
+        try{
+          await navigator.clipboard.writeText(pre.innerText);
+          const old = btn.textContent; btn.textContent = 'Copiado';
+          setTimeout(()=>btn.textContent=old,1200);
+        }catch(e){
+          alert('No se pudo copiar automáticamente. Selecciona el texto y usa Ctrl+C.');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
